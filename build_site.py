@@ -195,6 +195,10 @@ def render_html(snapshot: dict[str, Any], ladder_div: str, gauge_div: str,
   figcaption {{ font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
                 color:var(--faint); padding:9px 8px 0; display:flex; justify-content:space-between; }}
   figcaption b {{ color:var(--muted); font-weight:500; }}
+  .legend {{ display:flex; gap:18px; padding:8px 10px 0; flex-wrap:wrap; }}
+  .lg {{ font-family:var(--mono); font-size:11.5px; color:var(--muted); display:inline-flex;
+         align-items:center; gap:7px; }}
+  .lg i {{ width:18px; height:3px; border-radius:2px; display:inline-block; }}
   .two {{ display:grid; grid-template-columns:1fr 1fr; gap:13px; }}
 
   /* memo */
@@ -256,7 +260,11 @@ def render_html(snapshot: dict[str, Any], ladder_div: str, gauge_div: str,
 <div class="kpis reveal" style="animation-delay:.10s">{kpis}</div>
 
 <figure class="chart reveal" style="animation-delay:.14s">
-  <figcaption><span>Fig.01 — Liquidation density</span><b>longs below · shorts above</b></figcaption>
+  <figcaption><span>Fig.01 — Liquidation density</span><b>smoothed · sampled wallets</b></figcaption>
+  <div class="legend">
+    <span class="lg"><i style="background:var(--long)"></i>Long liquidations · flush risk (below mark)</span>
+    <span class="lg"><i style="background:var(--short)"></i>Short liquidations · squeeze risk (above mark)</span>
+  </div>
   {ladder_div}
 </figure>
 <div class="two">

@@ -18,6 +18,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -63,40 +64,74 @@ def _base_layout(fig: go.Figure, title: str) -> go.Figure:
 
 
 # ----------------------------------------------------------------- ladder map
+def _gaussian_smooth(y: np.ndarray, sigma: float = 1.8) -> np.ndarray:
+    """Light gaussian smoothing for a clean density profile (peak positions preserved)."""
+    if len(y) == 0:
+        return y
+    radius = max(1, int(sigma * 3))
+    k = np.exp(-(np.arange(-radius, radius + 1) ** 2) / (2 * sigma ** 2))
+    k /= k.sum()
+    return np.convolve(y, k, mode="same")
+
+
 def build_ladder_figure(snapshot: dict[str, Any]) -> go.Figure:
-    """Horizontal density of liquidable notional by price level."""
+    """Smoothed liquidation-density profile by price level.
+
+    Rendered as two filled "ridgeline" areas — long (flush risk, below mark) vs short
+    (squeeze risk, above) — instead of raw spiky bars. The notional is lightly
+    gaussian-smoothed for legibility; cluster positions and relative magnitudes are
+    preserved. Legend lives in the page (HTML chips) so it never overlaps the plot.
+    """
     mark = snapshot["market"]["mark_px"]
-    hist = pd.DataFrame(snapshot["histogram"])
-    hist = hist[(hist["long_notional"] > 0) | (hist["short_notional"] > 0)]
+    hist = pd.DataFrame(snapshot["histogram"]).sort_values("price_mid")
+    price = hist["price_mid"].to_numpy()
+    raw_long = hist["long_notional"].to_numpy().astype(float)
+    raw_short = hist["short_notional"].to_numpy().astype(float)
+    longs = _gaussian_smooth(raw_long)
+    shorts = _gaussian_smooth(raw_short)
+    # honest hover: real liquidable notional summed in a ~±1.25% window around each level
+    win = np.ones(5)
+    win_long = np.convolve(raw_long, win, mode="same")
+    win_short = np.convolve(raw_short, win, mode="same")
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        y=hist["price_mid"], x=hist["long_notional"], orientation="h",
-        name="Long liquidations · flush risk (below)", marker_color=LONG_COLOR,
-        marker_line_width=0,
-        hovertemplate="$%{y:,.0f}<br>long liquidable %{x:$,.0f}<extra></extra>",
+    fig.add_trace(go.Scatter(
+        x=longs, y=price, mode="lines", name="long", customdata=win_long,
+        line=dict(color=LONG_COLOR, width=2, shape="spline", smoothing=0.8),
+        fill="tozerox", fillcolor="rgba(63,185,140,0.18)",
+        hovertemplate="price $%{y:,.0f}<br>≈ $%{customdata:,.0f} long within ±1.25%<extra></extra>",
     ))
-    fig.add_trace(go.Bar(
-        y=hist["price_mid"], x=hist["short_notional"], orientation="h",
-        name="Short liquidations · squeeze risk (above)", marker_color=SHORT_COLOR,
-        marker_line_width=0,
-        hovertemplate="$%{y:,.0f}<br>short liquidable %{x:$,.0f}<extra></extra>",
+    fig.add_trace(go.Scatter(
+        x=shorts, y=price, mode="lines", name="short", customdata=win_short,
+        line=dict(color=SHORT_COLOR, width=2, shape="spline", smoothing=0.8),
+        fill="tozerox", fillcolor="rgba(229,86,78,0.18)",
+        hovertemplate="price $%{y:,.0f}<br>≈ $%{customdata:,.0f} short within ±1.25%<extra></extra>",
     ))
-    fig.add_hline(y=mark, line=dict(color=ACCENT, width=1.6),
-                  annotation_text=f"  BTC mark ${mark:,.0f}",
-                  annotation_position="top left",
-                  annotation_font=dict(color=ACCENT, family=MONO, size=12))
-    fig.add_hrect(y0=mark * 0.95, y1=mark * 1.05, fillcolor=ACCENT,
-                  opacity=0.05, line_width=0)
 
-    _base_layout(fig, "Liquidable notional by price level — where open BTC leverage triggers")
-    fig.update_layout(barmode="stack", bargap=0.12, height=520)
-    fig.update_xaxes(title=dict(text="Liquidable notional (USD)",
+    # mark price: a dotted line + a tag pinned just OUTSIDE the right edge (no overlap)
+    fig.add_hrect(y0=mark * 0.95, y1=mark * 1.05, fillcolor=ACCENT, opacity=0.05, line_width=0)
+    fig.add_hline(y=mark, line=dict(color=ACCENT, width=1.3, dash="dot"))
+    fig.add_annotation(xref="paper", x=1.005, xanchor="left", y=mark, yref="y",
+                       text=f"mark<br>${mark:,.0f}", showarrow=False, align="left",
+                       font=dict(color=ACCENT, family=MONO, size=10.5))
+
+    # frame the y-axis to where the notional actually lives
+    nz = hist[(hist["long_notional"] > 0) | (hist["short_notional"] > 0)]
+    if not nz.empty:
+        lo = min(float(nz["price_mid"].min()), mark * 0.97)
+        hi = max(float(nz["price_mid"].max()), mark * 1.03)
+        pad = (hi - lo) * 0.05
+        yrange = [lo - pad, hi + pad]
+    else:
+        yrange = [mark * 0.7, mark * 1.3]
+
+    _base_layout(fig, "Liquidation density by price level — where open BTC leverage triggers")
+    fig.update_layout(height=540, showlegend=False, margin=dict(l=76, r=64, t=42, b=46))
+    fig.update_xaxes(title=dict(text="Liquidable notional density (smoothed) — area ∝ notional",
                                 font=dict(color=MUTED, size=11)),
-                     tickprefix="$", tickformat="~s")
-    fig.update_yaxes(title=dict(text="Liquidation price (USD)",
-                                font=dict(color=MUTED, size=11)),
-                     tickprefix="$", tickformat=",.0f")
+                     tickprefix="$", tickformat="~s", rangemode="tozero", zeroline=False)
+    fig.update_yaxes(title=dict(text="Liquidation price (USD)", font=dict(color=MUTED, size=11)),
+                     tickprefix="$", tickformat=",.0f", range=yrange, showgrid=False)
     return fig
 
 
