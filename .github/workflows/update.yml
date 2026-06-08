@@ -53,7 +53,7 @@ jobs:
             i=$((i+1))
             echo "::group::iteration $i ($(date -u +%H:%M:%SZ))"
             python run_pipeline.py --wallets 300 || echo "pipeline iteration failed, continuing"
-            git add docs/index.html data/metrics_history.csv data/cfi_history.jsonl data/latest_snapshot.json data/wallet_universe.csv
+            git add docs/index.html docs/data.json data/metrics_history.csv data/cfi_history.jsonl data/map_history.jsonl data/latest_snapshot.json data/wallet_universe.csv
             if git diff --staged --quiet; then
               echo "no changes to commit"
             else

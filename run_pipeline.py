@@ -85,7 +85,7 @@ def run(n_wallets: int = 300, *, render: bool = True) -> None:
         # imported lazily so the data pipeline never depends on the viz stack
         from build_site import generate_site, publish_to_docs
         out = generate_site()
-        published = publish_to_docs(out)   # docs/ is what GitHub Pages serves
+        published = publish_to_docs()   # copies index.html + data.json into docs/ (served by Pages)
         print(f"[render] site -> {out} · published -> {published}")
 
     print(f"[done] {time.time() - t0:.1f}s")

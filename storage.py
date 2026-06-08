@@ -37,6 +37,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 LATEST_SNAPSHOT_JSON = os.path.join(DATA_DIR, "latest_snapshot.json")
 METRICS_CSV = os.path.join(DATA_DIR, "metrics_history.csv")
 LEDGER_JSONL = os.path.join(DATA_DIR, "cfi_history.jsonl")  # append-only canonical store
+MAP_HISTORY_JSONL = os.path.join(DATA_DIR, "map_history.jsonl")  # per-snapshot histograms (heatmap)
 SQLITE_DB = os.path.join(DATA_DIR, "warehouse.sqlite")
 
 
@@ -169,6 +170,44 @@ def load_metrics_history(path: str = METRICS_CSV) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+def append_map_history(m: LiquidationMap, path: str = MAP_HISTORY_JSONL) -> None:
+    """Append this snapshot's (compact) liquidation histogram for the time-heatmap.
+
+    Pure append-only: one line per run holding the timestamp, mark price, and the
+    non-zero price buckets as [price, long_notional, short_notional]. Existing lines
+    are never rewritten, so the per-snapshot map history is loss-resistant by
+    construction (and git history is a second copy).
+    """
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    buckets = [
+        [round(float(r.price_mid), 1), round(float(r.long_notional)), round(float(r.short_notional))]
+        for r in m.histogram.itertuples()
+        if r.long_notional > 0 or r.short_notional > 0
+    ]
+    rec = {"timestamp": m.timestamp, "mark": m.market.mark_px, "b": buckets}
+    with open(path, "a") as f:
+        f.write(json.dumps(rec) + "\n")
+
+
+def load_map_history(path: str = MAP_HISTORY_JSONL) -> list[dict[str, Any]]:
+    """Load per-snapshot histograms, de-duped by timestamp (keep last), time-sorted."""
+    if not os.path.exists(path):
+        return []
+    seen: dict[str, dict] = {}
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                d = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if "timestamp" in d:
+                seen[d["timestamp"]] = d
+    return [seen[k] for k in sorted(seen)]
+
+
 # ------------------------------------------------------------ relational mirror
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS liq_map_snapshot (
@@ -237,7 +276,8 @@ def write_sqlite(m: LiquidationMap, path: str = SQLITE_DB) -> None:
 
 
 def persist_all(m: LiquidationMap) -> None:
-    """Write all three artifacts for one run."""
+    """Write all artifacts for one run."""
     write_latest_snapshot(m)
     append_metrics_history(m)
+    append_map_history(m)
     write_sqlite(m)

@@ -26,12 +26,14 @@ import subprocess
 
 import pandas as pd
 
-from storage import (LEDGER_JSONL, METRICS_CSV, _persist_history, load_ledger,
-                     load_metrics_history)
+from storage import (LEDGER_JSONL, MAP_HISTORY_JSONL, METRICS_CSV, _persist_history,
+                     load_ledger, load_map_history, load_metrics_history)
 
 # repo-relative paths as git knows them
 GIT_LEDGER = "data/cfi_history.jsonl"
 GIT_CSV = "data/metrics_history.csv"
+GIT_MAP = "data/map_history.jsonl"
+GIT_SNAPSHOT = "data/latest_snapshot.json"
 
 
 def _git_versions(path: str) -> list[str]:
@@ -88,25 +90,66 @@ def collect_all_points() -> pd.DataFrame:
             .reset_index(drop=True))
 
 
+def _snap_to_map_line(content: str) -> dict | None:
+    """Turn a committed latest_snapshot.json into a compact map_history record."""
+    try:
+        snap = json.loads(content)
+        ts = snap["provenance"]["generated_at"]
+        mark = snap["market"]["mark_px"]
+        buckets = [[round(float(b["price_mid"]), 1), round(float(b["long_notional"])),
+                    round(float(b["short_notional"]))]
+                   for b in snap.get("histogram", [])
+                   if b.get("long_notional", 0) > 0 or b.get("short_notional", 0) > 0]
+        return {"timestamp": ts, "mark": mark, "b": buckets}
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def collect_map_history() -> list[dict]:
+    """Union per-snapshot histograms from the live file + git history of both the map
+    ledger and every committed latest_snapshot.json."""
+    rows: dict[str, dict] = {}
+    for rec in load_map_history():
+        rows.setdefault(rec["timestamp"], rec)
+    for content in _git_versions(GIT_MAP):
+        for line in content.splitlines():
+            line = line.strip()
+            if line:
+                try:
+                    d = json.loads(line)
+                    rows.setdefault(d["timestamp"], d)
+                except json.JSONDecodeError:
+                    pass
+    for content in _git_versions(GIT_SNAPSHOT):
+        rec = _snap_to_map_line(content)
+        if rec:
+            rows.setdefault(rec["timestamp"], rec)
+    return [rows[k] for k in sorted(rows)]
+
+
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Reconstruct the CFI history from all sources.")
+    ap = argparse.ArgumentParser(description="Reconstruct the CFI + map history from all sources.")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
     df = collect_all_points()
-    if df.empty:
+    maps = collect_map_history()
+    if df.empty and not maps:
         print("No points found in any source.")
         return
 
     cur = len(load_metrics_history())
-    print(f"Recovered {len(df)} unique points "
-          f"({df['timestamp'].min()} → {df['timestamp'].max()}); "
-          f"current CSV had {cur}.")
+    print(f"Recovered {len(df)} CFI points "
+          f"({df['timestamp'].min()} → {df['timestamp'].max()}); current CSV had {cur}.")
+    print(f"Recovered {len(maps)} per-snapshot histograms for the heatmap.")
     if args.dry_run:
         print("[dry-run] no files written.")
         return
     _persist_history(df, METRICS_CSV, LEDGER_JSONL)
-    print(f"Rewrote {METRICS_CSV} and {LEDGER_JSONL} from the union.")
+    with open(MAP_HISTORY_JSONL, "w") as f:
+        for rec in maps:
+            f.write(json.dumps(rec) + "\n")
+    print(f"Rewrote {METRICS_CSV}, {LEDGER_JSONL} and {MAP_HISTORY_JSONL} from the union.")
 
 
 if __name__ == "__main__":
