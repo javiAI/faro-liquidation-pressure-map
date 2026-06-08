@@ -1,0 +1,54 @@
+name: update-liquidation-map
+
+# Live demo runner. GitHub Actions is the always-on scheduler (the Airflow DAG in
+# dags/ is the PoC orchestration artifact). Every ~10 min we rebuild the map and
+# republish the page by committing docs/index.html back to the branch — GitHub
+# Pages (configured to serve /docs on main) picks it up automatically.
+#
+# We commit data/ back too so the Cascade Fragility Index time-series ACCUMULATES
+# across runs (runners are ephemeral) — that forward history is the whole point,
+# since the map itself is not backfillable.
+#
+# Caveats (stated honestly): GitHub's cron is best-effort and can be delayed under
+# load, and scheduled workflows pause after ~60 days of repo inactivity.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"     # best-effort every 10 minutes
+  workflow_dispatch: {}         # manual + first run
+
+permissions:
+  contents: write               # commit docs/ + accumulating history back
+
+concurrency:
+  group: liq-map-update
+  cancel-in-progress: false     # never interrupt a run mid-publish
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline (extract → validate → transform → load → render)
+        run: python run_pipeline.py --wallets 300
+
+      - name: Publish (commit docs + accumulating history)
+        run: |
+          git config user.name  "liq-map-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/index.html data/metrics_history.csv data/latest_snapshot.json data/wallet_universe.csv
+          if git diff --staged --quiet; then
+            echo "no changes to commit"
+          else
+            git commit -m "data: liquidation map snapshot [skip ci]"
+            git push
+          fi
