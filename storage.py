@@ -36,6 +36,7 @@ from liquidation_map import LiquidationMap
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 LATEST_SNAPSHOT_JSON = os.path.join(DATA_DIR, "latest_snapshot.json")
 METRICS_CSV = os.path.join(DATA_DIR, "metrics_history.csv")
+LEDGER_JSONL = os.path.join(DATA_DIR, "cfi_history.jsonl")  # append-only canonical store
 SQLITE_DB = os.path.join(DATA_DIR, "warehouse.sqlite")
 
 
@@ -86,19 +87,80 @@ def write_latest_snapshot(m: LiquidationMap, path: str = LATEST_SNAPSHOT_JSON) -
         json.dump(map_to_dict(m), f, indent=2)
 
 
-def append_metrics_history(m: LiquidationMap, path: str = METRICS_CSV) -> pd.DataFrame:
-    """Append this run's summary row to the time-series CSV (de-duped by timestamp)."""
+def _atomic_write(path: str, text: str) -> None:
+    """Write via a temp file + rename so a crash mid-write can't truncate the target."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    row = pd.DataFrame([m.summary()])
+    tmp = f"{path}.tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def append_ledger(m: LiquidationMap, path: str = LEDGER_JSONL) -> None:
+    """Append one immutable JSON line to the CFI ledger. Append-only = loss-resistant:
+    existing points are never rewritten, so a bad run cannot erase history."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a") as f:
+        f.write(json.dumps(m.summary()) + "\n")
+
+
+def load_ledger(path: str = LEDGER_JSONL) -> pd.DataFrame:
+    """Read the ledger, skipping any corrupt line (a damaged line never loses the rest)."""
+    if not os.path.exists(path):
+        return pd.DataFrame()
+    rows = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    if not rows:
+        return pd.DataFrame()
+    return (pd.DataFrame(rows)
+            .drop_duplicates("timestamp", keep="last")
+            .sort_values("timestamp").reset_index(drop=True))
+
+
+def _persist_history(df: pd.DataFrame, csv: str = METRICS_CSV,
+                     jsonl: str = LEDGER_JSONL) -> pd.DataFrame:
+    """Atomically write the deduped/sorted history to BOTH the CSV view and the ledger."""
+    df = (df.drop_duplicates("timestamp", keep="last")
+            .sort_values("timestamp").reset_index(drop=True))
+    _atomic_write(csv, df.to_csv(index=False))
+    lines = "".join(
+        json.dumps({k: (None if pd.isna(v) else v) for k, v in rec.items()}) + "\n"
+        for rec in df.to_dict("records")
+    )
+    _atomic_write(jsonl, lines)
+    return df
+
+
+def append_metrics_history(m: LiquidationMap, path: str = METRICS_CSV) -> pd.DataFrame:
+    """Persist this run's point with UNION semantics so history can only grow.
+
+    1) append the point to the append-only ledger first (immutable record);
+    2) rebuild the CSV/ledger as the UNION of (ledger ∪ existing CSV ∪ this row),
+       de-duped by timestamp — we never read-then-overwrite, so a stale or empty
+       read can add nothing but can never *drop* an existing point.
+
+    Combined with git history (every push snapshots both files) and rebuild_history.py,
+    the full series is reconstructable from multiple independent sources.
+    """
+    append_ledger(m)
+    frames = [load_ledger(), pd.DataFrame([m.summary()])]
     if os.path.exists(path):
-        hist = pd.read_csv(path)
-        hist = hist[hist["timestamp"] != m.timestamp]  # idempotent re-runs
-        out = pd.concat([hist, row], ignore_index=True)
-    else:
-        out = row
-    out = out.sort_values("timestamp").reset_index(drop=True)
-    out.to_csv(path, index=False)
-    return out
+        try:
+            frames.append(pd.read_csv(path))
+        except Exception:  # noqa: BLE001 - a damaged CSV must not block the run
+            pass
+    merged = pd.concat([f for f in frames if not f.empty], ignore_index=True)
+    return _persist_history(merged, path)
 
 
 def load_metrics_history(path: str = METRICS_CSV) -> pd.DataFrame:

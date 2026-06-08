@@ -385,6 +385,10 @@ liquidable notional ({_money(cov['sampled_notional_usd'])}) against total OI
 ({_money(m['oi_usd'])}) — the coverage ratio above — and mark vs oracle drift (a large gap
 flags a data-quality event). The honest statement: <em>a high-coverage sample of the most
 active wallets, not a census.</em></p>
+<p><strong>History integrity.</strong> Every CFI reading is appended to an immutable
+ledger (union semantics, atomic writes) and snapshotted to git each run, so the
+time-series can never be silently truncated and the whole series is rebuildable from git
+history via <code>rebuild_history.py</code>.</p>
 <div class="callout warn"><p><strong>Provenance &amp; caveat.</strong> {prov['caveat']} The
 leaderboard/activity feed used for wallet discovery is an <em>undocumented</em> Hyperliquid
 frontend endpoint, treated as a PoC stand-in for a production fills-WebSocket discovery
