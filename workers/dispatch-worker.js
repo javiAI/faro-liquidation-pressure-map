@@ -1,4 +1,4 @@
-// Optional Cloudflare Worker — lets the page's "↻ update" button trigger a REAL
+// Optional Cloudflare Worker — lets the page's "↻" button trigger a REAL
 // on-demand pipeline run, without ever exposing a token in the public page.
 //
 // Why a proxy at all? A static GitHub Pages site cannot call the GitHub API to start

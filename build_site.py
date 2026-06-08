@@ -345,7 +345,7 @@ async function poll(){
   }catch(e){}
 }
 
-// Manual "↻ update" button. By default it force-refreshes to the freshest committed
+// Manual "↻" button. By default it force-refreshes to the freshest committed
 // point and polls aggressively for ~3 min to catch a brand-new one the moment it lands.
 // Set DISPATCH_URL to a tiny workflow-dispatch proxy (see workers/dispatch-worker.js)
 // to make the button trigger a REAL on-demand extraction.
@@ -395,7 +395,7 @@ def _hero(snapshot: dict[str, Any]) -> str:
      <span class="tag">confidence <b id="conf-badge" style="color:{conf_color}">{conf}</b></span>
      <span class="tag"><span class="live-dot"></span><span id="freshness">live</span></span>
      <span class="tag">auto-refresh <b>~60s</b></span>
-     <button id="update-btn" class="tag btn" title="Fetch the freshest point now (a new point is produced every ~10 min; configure a dispatch endpoint for true on-demand extraction)">↻ update</button>
+     <button id="update-btn" class="tag btn" title="Fetch the freshest point now (a new point is produced every ~10 min; configure a dispatch endpoint for true on-demand extraction)">↻</button>
   </div>
 </header>
 <div class="rule reveal" style="animation-delay:.06s"></div>
