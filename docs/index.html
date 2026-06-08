@@ -4,78 +4,172 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Liquidation Pressure Map &amp; Cascade Fragility Index — BTC · Hyperliquid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
 <style>
-  :root { --bg:#0b0f17; --card:#111827; --line:#1f2937; --fg:#e5e7eb; --muted:#9ca3af;
-           --accent:#fbbf24; --teal:#14b8a6; --red:#ef4444; }
+  :root {
+    --ink:#0b0a09; --ink-2:#100e0c; --card:#15120f; --card-2:#1a1612;
+    --hair:#241f18; --hair-strong:#352d22;
+    --bone:#ece6da; --muted:#9a8f7d; --faint:#6f665a;
+    --gold:#e8a13a; --long:#3fb98c; --short:#e5564e;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,monospace;
+    --serif:"Fraunces",Georgia,serif;
+    --body:"Hanken Grotesk",system-ui,sans-serif;
+  }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg);
-          font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; line-height:1.6; }
-  .wrap { max-width:1080px; margin:0 auto; padding:28px 20px 80px; }
-  header.hero { border-bottom:1px solid var(--line); padding-bottom:18px; margin-bottom:24px; }
-  h1 { font-size:26px; margin:0 0 6px; letter-spacing:-0.3px; }
-  h2 { font-size:20px; margin:38px 0 10px; border-left:3px solid var(--accent);
-        padding-left:10px; }
-  h3 { font-size:16px; margin:22px 0 6px; color:#cbd5e1; }
-  .sub { color:var(--muted); font-size:14px; }
-  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
-            font-weight:600; }
-  .freshbar { display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
-  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 8px; }
-  .kpi { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
-  .kpi-label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.4px; }
-  .kpi-value { font-size:22px; font-weight:700; margin-top:2px; }
-  .kpi-value .u { font-size:13px; color:var(--muted); font-weight:500; }
-  .kpi-sub { color:var(--muted); font-size:12px; }
-  .chart { background:var(--card); border:1px solid var(--line); border-radius:12px;
-            padding:8px; margin:14px 0; }
-  .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  p, li { font-size:15px; color:#d1d5db; }
-  .memo p, .memo li { color:#cbd5e1; }
-  strong { color:#f3f4f6; }
-  .callout { background:#0f1b2d; border:1px solid #1e3a5f; border-radius:10px;
-              padding:12px 16px; margin:12px 0; }
-  .warn { background:#2a1410; border:1px solid #7f1d1d; }
-  table { width:100%; border-collapse:collapse; margin:10px 0; font-size:14px; }
-  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
-  th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; }
-  code { background:#0f172a; padding:2px 6px; border-radius:5px; font-size:13px; color:#93c5fd; }
-  .pill { font-size:12px; padding:2px 8px; border-radius:6px; background:#0f172a;
-           border:1px solid var(--line); color:var(--muted); }
-  footer { margin-top:50px; padding-top:18px; border-top:1px solid var(--line);
-            color:var(--muted); font-size:13px; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; color:var(--bone); font-family:var(--body); line-height:1.65;
+    background:
+      radial-gradient(1100px 520px at 78% -8%, rgba(232,161,58,0.10), transparent 60%),
+      radial-gradient(900px 600px at 0% 0%, rgba(63,185,140,0.05), transparent 55%),
+      var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  /* hairline grid + film grain atmosphere */
+  body::before {
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.5;
+    background-image:
+      linear-gradient(var(--hair) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hair) 1px, transparent 1px);
+    background-size:64px 64px, 64px 64px;
+    -webkit-mask-image:radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 90%);
+            mask-image:radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 90%);
+  }
+  body::after {
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>"); opacity:.04; mix-blend-mode:overlay;
+  }
+  .wrap { position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:46px 22px 90px; }
+  ::selection { background:rgba(232,161,58,0.28); color:#fff; }
+  ::-webkit-scrollbar { width:11px; } ::-webkit-scrollbar-thumb { background:var(--hair-strong); border-radius:6px; }
+
+  /* staggered reveal */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  .reveal { opacity:0; animation:fadeUp .7s cubic-bezier(.2,.7,.2,1) forwards; }
+  @media (prefers-reduced-motion:reduce) { .reveal { animation:none; opacity:1; } }
+
+  /* hero */
+  .eyebrow { font-family:var(--mono); font-size:11.5px; letter-spacing:.28em; text-transform:uppercase;
+              color:var(--muted); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .eyebrow .dot { width:4px; height:4px; border-radius:50%; background:var(--gold); }
+  h1 { font-family:var(--serif); font-weight:600; font-optical-sizing:auto;
+        font-size:clamp(34px,6vw,62px); line-height:1.02; letter-spacing:-.015em;
+        margin:18px 0 6px; }
+  h1 .amp { font-style:italic; font-weight:400; color:var(--gold); }
+  h1 .l2 { display:block; font-weight:400; color:var(--muted); font-size:.62em; letter-spacing:0; margin-top:6px; }
+  .dek { font-size:17px; color:#cabfae; max-width:60ch; margin:14px 0 0; }
+  .rail { display:flex; gap:9px; flex-wrap:wrap; margin-top:22px; }
+  .tag { font-family:var(--mono); font-size:11.5px; letter-spacing:.04em; padding:5px 11px;
+          border:1px solid var(--hair-strong); border-radius:999px; color:var(--muted);
+          display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,0.012); }
+  .tag b { color:var(--bone); font-weight:500; }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--long); position:relative; }
+  .live-dot::after { content:""; position:absolute; inset:-4px; border-radius:50%;
+                      border:1px solid var(--long); animation:pulse 2s ease-out infinite; }
+  @keyframes pulse { 0% { transform:scale(.6); opacity:.9; } 100% { transform:scale(1.8); opacity:0; } }
+
+  .rule { height:1px; background:linear-gradient(90deg,var(--hair-strong),transparent); margin:40px 0 0; }
+
+  /* KPI grid */
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:13px; margin:26px 0 6px; }
+  .kpi { position:relative; background:linear-gradient(180deg,var(--card),var(--ink-2));
+          border:1px solid var(--hair); border-radius:13px; padding:15px 15px 13px; overflow:hidden;
+          transition:transform .25s ease, border-color .25s ease; }
+  .kpi:hover { transform:translateY(-3px); border-color:var(--hair-strong); }
+  .kpi-bar { position:absolute; top:0; left:0; right:0; height:2px; opacity:.85; }
+  .kpi-label { font-family:var(--mono); color:var(--faint); font-size:10.5px; letter-spacing:.14em;
+                text-transform:uppercase; }
+  .kpi-value { font-family:var(--mono); font-size:25px; font-weight:500; margin-top:7px; color:var(--bone);
+                font-variant-numeric:tabular-nums; }
+  .kpi-value .u { font-size:13px; color:var(--faint); }
+  .kpi-sub { font-family:var(--mono); color:var(--muted); font-size:11px; margin-top:3px; }
+
+  /* figures */
+  figure.chart { margin:16px 0; background:linear-gradient(180deg,var(--card),var(--ink-2));
+                  border:1px solid var(--hair); border-radius:15px; padding:8px 10px 4px; }
+  figcaption { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+                color:var(--faint); padding:9px 8px 0; display:flex; justify-content:space-between; }
+  figcaption b { color:var(--muted); font-weight:500; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+
+  /* memo */
+  section.memo { margin-top:46px; }
+  .sec-head { display:flex; align-items:baseline; gap:16px; border-bottom:1px solid var(--hair);
+               padding-bottom:12px; margin:0 0 18px; }
+  .sec-num { font-family:var(--serif); font-size:30px; color:var(--gold); font-weight:600; line-height:1;
+              font-variant-numeric:tabular-nums; }
+  .sec-head h2 { font-family:var(--serif); font-weight:600; font-size:25px; letter-spacing:-.01em; margin:0; }
+  .memo p, .memo li { font-size:15.5px; color:#cdc3b3; max-width:70ch; }
+  .memo strong { color:var(--bone); font-weight:600; }
+  .memo em { color:#dcd2c2; }
+  .memo h3 { font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+              color:var(--gold); margin:24px 0 4px; }
+  ul { padding-left:20px; } li { margin:5px 0; }
+  code { font-family:var(--mono); background:var(--ink-2); border:1px solid var(--hair); padding:1px 6px;
+          border-radius:5px; font-size:12.5px; color:#e9c98c; }
+  .callout { border-left:2px solid var(--gold); background:linear-gradient(90deg,rgba(232,161,58,0.07),transparent);
+              padding:13px 18px; margin:16px 0; border-radius:0 10px 10px 0; }
+  .callout.warn { border-left-color:var(--short); background:linear-gradient(90deg,rgba(229,86,78,0.08),transparent); }
+  .callout p { margin:0; max-width:none; }
+  table { width:100%; border-collapse:collapse; margin:14px 0; font-size:13.5px; }
+  th { font-family:var(--mono); text-align:left; color:var(--faint); font-weight:500; font-size:10.5px;
+        letter-spacing:.1em; text-transform:uppercase; padding:9px 10px; border-bottom:1px solid var(--hair-strong); }
+  td { padding:9px 10px; border-bottom:1px solid var(--hair); color:#cdc3b3; }
+  td:nth-child(2) { font-family:var(--mono); color:var(--bone); font-variant-numeric:tabular-nums; }
+
+  footer { margin-top:54px; padding-top:18px; border-top:1px solid var(--hair); color:var(--faint);
+            font-family:var(--mono); font-size:12px; line-height:1.8; }
+  footer .live { color:var(--muted); }
   @media (max-width:820px) { .kpis { grid-template-columns:repeat(2,1fr); } .two { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<header class="hero">
-  <h1>Liquidation Pressure Map &amp; Cascade Fragility Index</h1>
-  <div class="sub">A forward-looking risk metric for BTC perps on Hyperliquid —
-     proof-of-concept for the Faro <em>Head of Data</em> challenge.</div>
-  <div class="freshbar">
-     <span class="badge" style="background:#14b8a622;color:#14b8a6">
-        REGIME: CALM</span>
-     <span class="badge" style="background:#f59e0b22;color:#f59e0b">
-        CONFIDENCE: Medium</span>
-     <span id="freshness" class="pill">computing freshness…</span>
-     <span class="pill">cadence ~10 min · GitHub Actions → Pages</span>
-     <span class="pill">source: Hyperliquid public API</span>
+<header class="reveal" style="animation-delay:.02s">
+  <div class="eyebrow">
+    <span>Faro · Head of Data challenge</span><span class="dot"></span>
+    <span>Hyperliquid · BTC perps</span><span class="dot"></span>
+    <span>proof of concept</span>
+  </div>
+  <h1>Liquidation Pressure Map
+      <span class="l2"><span class="amp">&amp;</span> Cascade Fragility Index</span></h1>
+  <p class="dek">A <em>forward-looking</em> risk metric: where the currently-open BTC
+     leverage on Hyperliquid would be force-liquidated — and how fragile that makes the
+     market structure right now.</p>
+  <div class="rail">
+     <span class="tag">regime <b style="color:var(--long)">CALM</b></span>
+     <span class="tag">confidence <b style="color:#e8a13a">Medium</b></span>
+     <span class="tag"><span class="live-dot"></span><span id="freshness">updating…</span></span>
+     <span class="tag">cadence <b>~10 min</b></span>
+     <span class="tag">source <b>Hyperliquid API</b></span>
   </div>
 </header>
 
-<div class="kpis"><div class="kpi"><div class="kpi-label">BTC mark</div><div class="kpi-value" style="color:#e5e7eb">$63,418</div><div class="kpi-sub">oracle $63,442</div></div><div class="kpi"><div class="kpi-label">Cascade Fragility Index</div><div class="kpi-value" style="color:#14b8a6">13.4<span class='u'>/100</span></div><div class="kpi-sub">regime: CALM</div></div><div class="kpi"><div class="kpi-label">Long/Short asymmetry</div><div class="kpi-value" style="color:#ef4444">+0.48</div><div class="kpi-sub">short side · upside-squeeze fuel</div></div><div class="kpi"><div class="kpi-label">Liquidable within ±5%</div><div class="kpi-value" style="color:#e5e7eb">$26.16M</div><div class="kpi-sub">±2%: $23.87M</div></div><div class="kpi"><div class="kpi-label">Funding (annualized)</div><div class="kpi-value" style="color:#e5e7eb">+3.4%</div><div class="kpi-sub">+0.0004%/h</div></div><div class="kpi"><div class="kpi-label">Open interest</div><div class="kpi-value" style="color:#e5e7eb">$1.93B</div><div class="kpi-sub">30,499 BTC</div></div><div class="kpi"><div class="kpi-label">Sample coverage</div><div class="kpi-value" style="color:#e5e7eb">22.9%</div><div class="kpi-sub">46 pos · 300 wallets</div></div><div class="kpi"><div class="kpi-label">Signal confidence</div><div class="kpi-value" style="color:#f59e0b">Medium</div><div class="kpi-sub">coverage × sample depth</div></div></div>
+<div class="rule reveal" style="animation-delay:.06s"></div>
 
-<div class="chart"><div style="height:100%; width:100%;">                            <div id="ladder" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("ladder")) {                    Plotly.newPlot(                        "ladder",                        [{"hovertemplate":"$%{y:,.0f}\u003cbr\u003elong liquidable %{x:$,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#14b8a6"},"name":"Long liquidations (flush risk, below)","orientation":"h","x":{"dtype":"f8","bdata":"AAAAAJc8WEEmx518mUZoQQb1LSXimX1Bt0WZvaiLQkEAAAAA+GIjQf5l96RqOD9BAAAAAPYZLUGC\u002f63AKg5VQcoyxElT82VBKzV7YCsZBEFhjh4\u002fptEfQbCsNOn98z9BnIpUCHpKMUHs3R9vQEL\u002fQO\u002fmqWJ1pllBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},"y":{"dtype":"f8","bdata":"j8L1KHBf5kAzMzMzh5znQJqZmZm1YuhAZmZmZhLv6UB7FK5HtRbqQJDC9ShYPupAuB6F652N6kDNzMzMQLXqQB6F61HMU+tAcT0K11fy60CG61G4+hnsQML1KFzjkOxAPgrXo7R+7UCkcD0K40TuQM7MzMwolO5AIIXrUbQy70A0MzMzV1rvQIbrUbji+O9A7FG4HrdL8EAAAAAAWnPwQEjhehQU\u002fvBAUrgeheUR8UBcj8L1tiXxQGdmZmaIOfFAexSuRyth8UA+CtejttnyQJDC9ShCePNAzczMzCrv80DXo3A9\u002fAL0QOJ6FK7NFvRA"},"type":"bar"},{"hovertemplate":"$%{y:,.0f}\u003cbr\u003eshort liquidable %{x:$,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#ef4444"},"name":"Short liquidations (squeeze risk, above)","orientation":"h","x":{"dtype":"f8","bdata":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgNUuYkE730\u002fPDA9dQUcgXvchQy9BhlW8EIaudEFg5dCIh5RrQXyb\u002fnyX9y5BAAAAABo8aEG45LiRcEdUQeauJXSgcllBA7LXOzrKQEEAAADAoy9iQTdsWwKoIIdBzzEgfa1TXkE5nPn1x6wWQWZmZmbm6vtA"},"y":{"dtype":"f8","bdata":"j8L1KHBf5kAzMzMzh5znQJqZmZm1YuhAZmZmZhLv6UB7FK5HtRbqQJDC9ShYPupAuB6F652N6kDNzMzMQLXqQB6F61HMU+tAcT0K11fy60CG61G4+hnsQML1KFzjkOxAPgrXo7R+7UCkcD0K40TuQM7MzMwolO5AIIXrUbQy70A0MzMzV1rvQIbrUbji+O9A7FG4HrdL8EAAAAAAWnPwQEjhehQU\u002fvBAUrgeheUR8UBcj8L1tiXxQGdmZmaIOfFAexSuRyth8UA+CtejttnyQJDC9ShCePNAzczMzCrv80DXo3A9\u002fAL0QOJ6FK7NFvRA"},"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"shapes":[{"line":{"color":"#fbbf24","dash":"solid","width":2},"type":"line","x0":0,"x1":1,"xref":"x domain","y0":63418.0,"y1":63418.0,"yref":"y"},{"fillcolor":"#fbbf24","line":{"width":0},"opacity":0.06,"type":"rect","x0":0,"x1":1,"xref":"x domain","y0":60247.1,"y1":66588.90000000001,"yref":"y"}],"annotations":[{"font":{"color":"#fbbf24"},"showarrow":false,"text":"BTC mark $63,418","x":0,"xanchor":"left","xref":"x domain","y":63418.0,"yanchor":"bottom","yref":"y"}],"title":{"font":{"size":16,"color":"#e5e7eb"},"text":"Liquidation Pressure Map — BTC (open positions, where they liquidate)"},"font":{"color":"#e5e7eb","family":"Inter, system-ui, sans-serif"},"margin":{"l":70,"r":30,"t":60,"b":50},"legend":{"bgcolor":"rgba(0,0,0,0)","orientation":"h","y":1.02,"x":0},"paper_bgcolor":"#0b0f17","plot_bgcolor":"#0b0f17","xaxis":{"gridcolor":"#1f2937","zerolinecolor":"#1f2937","title":{"text":"Liquidable notional (USD)"},"tickprefix":"$","tickformat":"~s"},"yaxis":{"gridcolor":"#1f2937","zerolinecolor":"#1f2937","title":{"text":"Liquidation price (USD)"},"tickprefix":"$","tickformat":",.0f"},"barmode":"stack","bargap":0.1},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div></div>
+<div class="kpis reveal" style="animation-delay:.10s"><div class="kpi"><span class="kpi-bar" style="background:var(--hair-strong)"></span><div class="kpi-label">BTC mark</div><div class="kpi-value">$63,418</div><div class="kpi-sub">oracle $63,442</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--long)"></span><div class="kpi-label">Cascade Fragility Index</div><div class="kpi-value">13.4<span class='u'>/100</span></div><div class="kpi-sub">regime · CALM</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--short)"></span><div class="kpi-label">Long / short asymmetry</div><div class="kpi-value">+0.48</div><div class="kpi-sub">short side · upside-squeeze fuel</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--gold)"></span><div class="kpi-label">Liquidable within ±5%</div><div class="kpi-value">$26.16M</div><div class="kpi-sub">±2% · $23.87M</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--hair-strong)"></span><div class="kpi-label">Funding (annualized)</div><div class="kpi-value">+3.4%</div><div class="kpi-sub">+0.0004% / h</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--hair-strong)"></span><div class="kpi-label">Open interest</div><div class="kpi-value">$1.93B</div><div class="kpi-sub">30,499 BTC</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--hair-strong)"></span><div class="kpi-label">Sample coverage</div><div class="kpi-value">22.9%</div><div class="kpi-sub">46 pos · 300 wallets</div></div><div class="kpi"><span class="kpi-bar" style="background:#e8a13a"></span><div class="kpi-label">Signal confidence</div><div class="kpi-value">Medium</div><div class="kpi-sub">coverage × sample depth</div></div></div>
+
+<figure class="chart reveal" style="animation-delay:.14s">
+  <figcaption><span>Fig.01 — Liquidation density</span><b>longs below · shorts above</b></figcaption>
+  <div style="height:520px; width:100%;">                            <div id="ladder" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("ladder")) {                    Plotly.newPlot(                        "ladder",                        [{"hovertemplate":"$%{y:,.0f}\u003cbr\u003elong liquidable %{x:$,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#3fb98c","line":{"width":0}},"name":"Long liquidations · flush risk (below)","orientation":"h","x":{"dtype":"f8","bdata":"AAAAAJc8WEEmx518mUZoQQb1LSXimX1Bt0WZvaiLQkEAAAAA+GIjQf5l96RqOD9BAAAAAPYZLUGC\u002f63AKg5VQcoyxElT82VBKzV7YCsZBEFhjh4\u002fptEfQbCsNOn98z9BnIpUCHpKMUHs3R9vQEL\u002fQO\u002fmqWJ1pllBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},"y":{"dtype":"f8","bdata":"j8L1KHBf5kAzMzMzh5znQJqZmZm1YuhAZmZmZhLv6UB7FK5HtRbqQJDC9ShYPupAuB6F652N6kDNzMzMQLXqQB6F61HMU+tAcT0K11fy60CG61G4+hnsQML1KFzjkOxAPgrXo7R+7UCkcD0K40TuQM7MzMwolO5AIIXrUbQy70A0MzMzV1rvQIbrUbji+O9A7FG4HrdL8EAAAAAAWnPwQEjhehQU\u002fvBAUrgeheUR8UBcj8L1tiXxQGdmZmaIOfFAexSuRyth8UA+CtejttnyQJDC9ShCePNAzczMzCrv80DXo3A9\u002fAL0QOJ6FK7NFvRA"},"type":"bar"},{"hovertemplate":"$%{y:,.0f}\u003cbr\u003eshort liquidable %{x:$,.0f}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#e5564e","line":{"width":0}},"name":"Short liquidations · squeeze risk (above)","orientation":"h","x":{"dtype":"f8","bdata":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgNUuYkE730\u002fPDA9dQUcgXvchQy9BhlW8EIaudEFg5dCIh5RrQXyb\u002fnyX9y5BAAAAABo8aEG45LiRcEdUQeauJXSgcllBA7LXOzrKQEEAAADAoy9iQTdsWwKoIIdBzzEgfa1TXkE5nPn1x6wWQWZmZmbm6vtA"},"y":{"dtype":"f8","bdata":"j8L1KHBf5kAzMzMzh5znQJqZmZm1YuhAZmZmZhLv6UB7FK5HtRbqQJDC9ShYPupAuB6F652N6kDNzMzMQLXqQB6F61HMU+tAcT0K11fy60CG61G4+hnsQML1KFzjkOxAPgrXo7R+7UCkcD0K40TuQM7MzMwolO5AIIXrUbQy70A0MzMzV1rvQIbrUbji+O9A7FG4HrdL8EAAAAAAWnPwQEjhehQU\u002fvBAUrgeheUR8UBcj8L1tiXxQGdmZmaIOfFAexSuRyth8UA+CtejttnyQJDC9ShCePNAzczMzCrv80DXo3A9\u002fAL0QOJ6FK7NFvRA"},"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"shapes":[{"line":{"color":"#e8a13a","width":1.6},"type":"line","x0":0,"x1":1,"xref":"x domain","y0":63418.0,"y1":63418.0,"yref":"y"},{"fillcolor":"#e8a13a","line":{"width":0},"opacity":0.05,"type":"rect","x0":0,"x1":1,"xref":"x domain","y0":60247.1,"y1":66588.90000000001,"yref":"y"}],"annotations":[{"font":{"color":"#e8a13a","family":"IBM Plex Mono, ui-monospace, SFMono-Regular, monospace","size":12},"showarrow":false,"text":"  BTC mark $63,418","x":0,"xanchor":"left","xref":"x domain","y":63418.0,"yanchor":"bottom","yref":"y"}],"title":{"font":{"size":15,"color":"#ece6da","family":"IBM Plex Mono, ui-monospace, SFMono-Regular, monospace"},"text":"Liquidable notional by price level — where open BTC leverage triggers","x":0.01},"font":{"color":"#ece6da","family":"IBM Plex Mono, ui-monospace, SFMono-Regular, monospace","size":12},"margin":{"l":72,"r":26,"t":54,"b":46},"legend":{"font":{"size":11,"color":"#9a8f7d"},"bgcolor":"rgba(0,0,0,0)","orientation":"h","y":1.04,"x":0},"hoverlabel":{"font":{"family":"IBM Plex Mono, ui-monospace, SFMono-Regular, monospace","color":"#ece6da"},"bgcolor":"#15120f","bordercolor":"rgba(150,128,92,0.13)"},"paper_bgcolor":"rgba(0,0,0,0)","plot_bgcolor":"rgba(0,0,0,0)","xaxis":{"tickfont":{"color":"#9a8f7d","size":11},"gridcolor":"rgba(150,128,92,0.13)","zerolinecolor":"rgba(150,128,92,0.13)","linecolor":"rgba(150,128,92,0.13)","title":{"font":{"color":"#9a8f7d","size":11},"text":"Liquidable notional (USD)"},"tickprefix":"$","tickformat":"~s"},"yaxis":{"tickfont":{"color":"#9a8f7d","size":11},"gridcolor":"rgba(150,128,92,0.13)","zerolinecolor":"rgba(150,128,92,0.13)","linecolor":"rgba(150,128,92,0.13)","title":{"font":{"color":"#9a8f7d","size":11},"text":"Liquidation price (USD)"},"tickprefix":"$","tickformat":",.0f"},"barmode":"stack","bargap":0.12,"height":520},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+</figure>
 <div class="two">
-  <div class="chart"><div style="height:300px; width:100%;">                            <div id="gauge" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("gauge")) {                    Plotly.newPlot(                        "gauge",                        [{"gauge":{"axis":{"range":[0,100],"tickcolor":"#e5e7eb"},"bar":{"color":"#e5e7eb","thickness":0.25},"steps":[{"color":"#065f46","range":[0,25.0]},{"color":"#92400e","range":[25.0,50.0]},{"color":"#7f1d1d","range":[50.0,100]}],"threshold":{"line":{"color":"#fbbf24","width":4},"value":13.39}},"mode":"gauge+number","number":{"font":{"color":"#e5e7eb","size":40},"suffix":"\u002f100"},"title":{"font":{"color":"#e5e7eb","size":15},"text":"Cascade Fragility Index"},"value":13.39,"type":"indicator"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"font":{"color":"#e5e7eb"},"margin":{"l":30,"r":30,"t":50,"b":10},"paper_bgcolor":"#0b0f17","height":300},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div></div>
-  <div class="chart"><div style="height:100%; width:100%;">                            <div id="history" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("history")) {                    Plotly.newPlot(                        "history",                        [{"hovertemplate":"%{x}\u003cbr\u003eCFI %{y:.1f}\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#fbbf24","width":2},"marker":{"size":6},"mode":"lines+markers","name":"CFI","x":["2026-06-08T10:46:23","2026-06-08T11:22:31","2026-06-08T12:43:51"],"y":{"dtype":"f8","bdata":"uB6F61E4KUBmZmZmZuYpQEjhehSuxypA"},"type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"shapes":[{"fillcolor":"#14b8a6","line":{"width":0},"opacity":0.1,"type":"rect","x0":0,"x1":1,"xref":"x domain","y0":0,"y1":25.0,"yref":"y"},{"fillcolor":"#f59e0b","line":{"width":0},"opacity":0.1,"type":"rect","x0":0,"x1":1,"xref":"x domain","y0":25.0,"y1":50.0,"yref":"y"},{"fillcolor":"#ef4444","line":{"width":0},"opacity":0.1,"type":"rect","x0":0,"x1":1,"xref":"x domain","y0":50.0,"y1":100,"yref":"y"}],"title":{"font":{"size":16,"color":"#e5e7eb"},"text":"Cascade Fragility Index — history (accumulates every ~10 min)"},"font":{"color":"#e5e7eb","family":"Inter, system-ui, sans-serif"},"margin":{"l":70,"r":30,"t":60,"b":50},"legend":{"bgcolor":"rgba(0,0,0,0)","orientation":"h","y":1.02,"x":0},"paper_bgcolor":"#0b0f17","plot_bgcolor":"#0b0f17","xaxis":{"gridcolor":"#1f2937","zerolinecolor":"#1f2937","title":{"text":"Time (UTC)"}},"yaxis":{"gridcolor":"#1f2937","zerolinecolor":"#1f2937","range":[0,100],"title":{"text":"CFI"}}},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div></div>
+  <figure class="chart reveal" style="animation-delay:.18s">
+    <figcaption><span>Fig.02 — Fragility gauge</span><b>0–100</b></figcaption>
+    <div style="height:260px; width:100%;">                            <div id="gauge" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("gauge")) {                    Plotly.newPlot(                        "gauge",                        [{"gauge":{"axis":{"range":[0,100],"tickcolor":"#9a8f7d","tickfont":{"color":"#9a8f7d","size":10}},"bar":{"color":"#ece6da","thickness":0.22},"bgcolor":"rgba(0,0,0,0)","borderwidth":0,"steps":[{"color":"rgba(63,185,140,0.30)","range":[0,25.0]},{"color":"rgba(232,161,58,0.30)","range":[25.0,50.0]},{"color":"rgba(229,86,78,0.32)","range":[50.0,100]}],"threshold":{"line":{"color":"#e8a13a","width":4},"value":13.39}},"mode":"gauge+number","number":{"font":{"color":"#ece6da","family":"IBM Plex Mono, ui-monospace, SFMono-Regular, monospace","size":44},"suffix":"\u002f100"},"value":13.39,"type":"indicator"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"font":{"color":"#ece6da","family":"IBM Plex Mono, ui-monospace, SFMono-Regular, monospace"},"margin":{"l":26,"r":26,"t":22,"b":8},"paper_bgcolor":"rgba(0,0,0,0)","height":260},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+  </figure>
+  <figure class="chart reveal" style="animation-delay:.22s">
+    <figcaption><span>Fig.03 — CFI history</span><b>regime bands</b></figcaption>
+    <div style="height:260px; width:100%;">                            <div id="history" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("history")) {                    Plotly.newPlot(                        "history",                        [{"fill":"tozeroy","fillcolor":"rgba(232,161,58,0.07)","hovertemplate":"%{x|%b %d %H:%M}\u003cbr\u003eCFI %{y:.1f}\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#e8a13a","shape":"spline","smoothing":0.4,"width":2},"marker":{"color":"#e8a13a","size":5},"mode":"lines+markers","name":"CFI","x":["2026-06-08T10:46:23","2026-06-08T11:22:31","2026-06-08T12:43:51"],"y":{"dtype":"f8","bdata":"uB6F61E4KUBmZmZmZuYpQEjhehSuxypA"},"type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"shapes":[{"fillcolor":"#3fb98c","line":{"width":0},"opacity":0.07,"type":"rect","x0":0,"x1":1,"xref":"x domain","y0":0,"y1":25.0,"yref":"y"},{"fillcolor":"#e8a13a","line":{"width":0},"opacity":0.07,"type":"rect","x0":0,"x1":1,"xref":"x domain","y0":25.0,"y1":50.0,"yref":"y"},{"fillcolor":"#e5564e","line":{"width":0},"opacity":0.07,"type":"rect","x0":0,"x1":1,"xref":"x domain","y0":50.0,"y1":100,"yref":"y"}],"title":{"font":{"size":15,"color":"#ece6da","family":"IBM Plex Mono, ui-monospace, SFMono-Regular, monospace"},"text":"Cascade Fragility Index — accumulating every ~10 min","x":0.01},"font":{"color":"#ece6da","family":"IBM Plex Mono, ui-monospace, SFMono-Regular, monospace","size":12},"margin":{"l":72,"r":26,"t":54,"b":46},"legend":{"font":{"size":11,"color":"#9a8f7d"},"bgcolor":"rgba(0,0,0,0)","orientation":"h","y":1.04,"x":0},"hoverlabel":{"font":{"family":"IBM Plex Mono, ui-monospace, SFMono-Regular, monospace","color":"#ece6da"},"bgcolor":"#15120f","bordercolor":"rgba(150,128,92,0.13)"},"paper_bgcolor":"rgba(0,0,0,0)","plot_bgcolor":"rgba(0,0,0,0)","xaxis":{"tickfont":{"color":"#9a8f7d","size":11},"gridcolor":"rgba(150,128,92,0.13)","zerolinecolor":"rgba(150,128,92,0.13)","linecolor":"rgba(150,128,92,0.13)","title":{"text":""}},"yaxis":{"tickfont":{"color":"#9a8f7d","size":11},"gridcolor":"rgba(150,128,92,0.13)","zerolinecolor":"rgba(150,128,92,0.13)","linecolor":"rgba(150,128,92,0.13)","title":{"font":{"color":"#9a8f7d","size":11},"text":"CFI"},"range":[0,100]},"height":260},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+  </figure>
 </div>
 
-<div class="memo">
-
-<h2>1 · Product &amp; Data Insight</h2>
+<section class="memo reveal" style="animation-delay:.10s">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Product &amp; Data Insight</h2></div>
 <p><strong>The metric.</strong> A <strong>Liquidation Pressure Map</strong>: a density
 map of the price levels at which <em>currently-open</em> leveraged BTC positions on
 Hyperliquid would be force-liquidated, split by side (longs liquidate below price,
@@ -83,25 +177,21 @@ shorts above). From it we derive two signals: the <strong>Cascade Fragility Inde
 (CFI, 0–100)</strong> — how much liquidable notional sits <em>close</em> to the mark
 price — and the <strong>Long/Short Asymmetry (−1…+1)</strong> — which side is the more
 combustible.</p>
-
-<div class="callout">
-<strong>The specific gap in Faro.</strong> Faro already surfaces <em>Liquidation
-Volume</em> — liquidations that have <strong>already executed</strong> (a backward-looking
-flow of realized events). The map proposed here is its orthogonal complement on the
-time axis: it measures <strong>latent</strong> liquidation risk from positions that are
-<strong>still open</strong>, and — crucially — it tells you <strong>at which prices</strong>
-that risk is parked. Liquidation Volume tells you the cascade <em>happened</em>; the
-Fragility Map tells you the fuel is <em>there, at these levels, right now</em>.</div>
-
+<div class="callout"><p><strong>The specific gap in Faro.</strong> Faro already surfaces
+<em>Liquidation Volume</em> — liquidations that <strong>already executed</strong> (a
+backward-looking flow of realized events). The map proposed here is its orthogonal
+complement on the time axis: it measures <strong>latent</strong> liquidation risk from
+positions that are <strong>still open</strong>, and — crucially — it tells you
+<strong>at which prices</strong> that risk is parked. Liquidation Volume tells you the
+cascade <em>happened</em>; the Fragility Map tells you the fuel is <em>there, at these
+levels, right now</em>.</p></div>
 <p><strong>The trader question it answers.</strong> “Is risk building beneath the
 surface, and where are the trigger levels?” Concretely: where are the magnet/cascade
 levels a move would accelerate into; which side is more vulnerable to a squeeze; and is
 the overall structure fragile or resilient <em>before</em> the move, not after.</p>
-
 <p><strong>Where it is most relevant.</strong> BTC perpetuals on Hyperliquid — the most
 liquid, highest-leverage venue surface Faro covers — for intraday-to-swing risk
 management: stop placement, squeeze hunting, and sizing into/out of crowded structure.</p>
-
 <p><strong>Source data (all public, no auth).</strong>
 <code>metaAndAssetCtxs</code> → mark price (the liquidation reference), oracle, funding,
 open interest. <code>clearinghouseState</code> per wallet → <code>szi</code> (signed
@@ -109,128 +199,122 @@ size), <code>liquidationPx</code> (exchange-computed trigger), <code>positionVal
 (notional). Wallet universe → the public leaderboard/activity feed (PoC), with
 continuous discovery from the fills WebSocket in production.</p>
 
-<h2>2 · Pipeline (Airflow DAG, proof-of-concept)</h2>
-<p>The DAG <code>dags/liquidation_pressure_dag.py</code> runs on a fixed cadence and is
-structured as five clear tasks; the same functions are reused by the live runner
-(<code>run_pipeline.py</code>) that GitHub Actions calls for this page.</p>
+  <div class="sec-head" style="margin-top:38px"><span class="sec-num">02</span><h2>Pipeline — Airflow DAG</h2></div>
+<p>The DAG <code>liquidation_pressure_dag.py</code> runs on a fixed cadence and is
+structured as clear tasks; the same functions are reused by the live runner
+(<code>run_pipeline.py</code>) that drives this page.</p>
 <table>
-<tr><th>Stage</th><th>What it does</th><th>Reliability concern handled</th></tr>
-<tr><td><code>extract_market_context</code></td><td>metaAndAssetCtxs → mark/oi/funding</td><td>retry+backoff; anchor for all distances</td></tr>
-<tr><td><code>extract_positions</code></td><td>clearinghouseState over the wallet universe (rate-limited)</td><td>per-wallet errors tolerated &amp; counted, not fatal</td></tr>
-<tr><td><code>validate</code></td><td>schema, range sanity, null/dust detection, freshness</td><td>bad rows quarantined; thin samples flagged low-confidence</td></tr>
-<tr><td><code>transform</code></td><td>build map + CFI + asymmetry</td><td>pure function, unit-testable</td></tr>
-<tr><td><code>load</code></td><td>JSON snapshot + append CFI to time-series + SQLite mirror</td><td>idempotent upserts by run timestamp</td></tr>
+<tr><th>Stage</th><th>Does</th><th>Reliability concern handled</th></tr>
+<tr><td>extract_market_context</td><td>mark / oi / funding</td><td>retry+backoff; anchor for all distances</td></tr>
+<tr><td>extract_positions</td><td>clearinghouseState over the universe</td><td>per-wallet errors tolerated &amp; counted</td></tr>
+<tr><td>validate</td><td>schema, range, null/dust, freshness</td><td>bad rows quarantined; thin samples flagged</td></tr>
+<tr><td>transform</td><td>map + CFI + asymmetry</td><td>pure function, unit-testable</td></tr>
+<tr><td>load</td><td>JSON + CSV series + SQLite mirror</td><td>idempotent upserts by run timestamp</td></tr>
 </table>
-<p><strong>Scheduling:</strong> every 10 min (<code>*/10 * * * *</code>); universe refresh
-daily. <strong>Failure handling:</strong> task retries with exponential backoff; alerts
-on (a) staleness &gt; 2 cadences, (b) coverage collapse, (c) wallet-error-rate spike.
-<strong>Backfill:</strong> the map itself is <em>not</em> backfillable — the API only
-returns the current state of each account, so past liquidation maps cannot be
-reconstructed. We are explicit about this: the CFI <em>time-series</em> accumulates
-forward from first deploy; only the wallet-selection step uses history.</p>
+<p><strong>Scheduling</strong> every ~10 min; universe refresh daily.
+<strong>Failure handling</strong>: task retries with exponential backoff; alerts on
+staleness, coverage collapse, or wallet-error spikes. <strong>Backfill</strong>: the map
+is <em>not</em> backfillable — the API only returns the current state of each account, so
+past maps cannot be reconstructed. The CFI <em>time-series</em> therefore accumulates
+forward from first deploy; only wallet selection uses history.</p>
 
-<h2>3 · Trader-Facing Explanation</h2>
+  <div class="sec-head" style="margin-top:38px"><span class="sec-num">03</span><h2>Trader-Facing Read</h2></div>
 <p><strong>Why it is insightful.</strong> Cascades are reflexive: a liquidation pushes
 price, which triggers the next liquidation. The danger is not the <em>amount</em> of
 leverage but <em>how close its triggers sit to the current price</em>. The CFI measures
-exactly that proximity-weighted concentration, so it rises before a fragile move, not
-after.</p>
-<p><strong>How to read it.</strong></p>
+exactly that proximity-weighted concentration, so it rises before a fragile move.</p>
 <ul>
-<li><strong>Bullish / squeeze setup:</strong> asymmetry strongly positive with a dense
-short cluster just above price → shorts are the fuel; an upside poke can ignite a
-short squeeze toward that level.</li>
-<li><strong>Bearish / flush risk:</strong> asymmetry negative with a dense long cluster
-just below price → longs are the fuel; a downside poke can cascade into a long flush.</li>
-<li><strong>Risk-warning:</strong> CFI in the <span style="color:var(--red)">fragile</span>
-band means large liquidable notional is parked within a few percent of price on either
-side — small moves can become violent. Calm = the fuel is far away.</li>
+<li><strong style="color:var(--short)">Bullish / squeeze setup:</strong> asymmetry strongly
+positive with a dense short cluster just above price → shorts are the fuel; an upside poke
+can ignite a squeeze toward that level.</li>
+<li><strong style="color:var(--long)">Bearish / flush risk:</strong> asymmetry negative with
+a dense long cluster just below price → longs are the fuel; a downside poke can cascade
+into a flush.</li>
+<li><strong style="color:var(--gold)">Risk-warning:</strong> CFI in the fragile band means
+large liquidable notional is parked within a few percent of price — small moves can become
+violent. Calm = the fuel is far away.</li>
 </ul>
-<p><strong>What it should NOT be used for.</strong> It is not a price <em>forecast</em>
-and not a timing trigger — clusters can sit unlit for a long time, and the levels often
-act as <em>magnets</em> rather than walls. It is a <em>conditional risk geography</em>,
-not a directional signal. It also reflects a <em>sample</em> of the market (see
-coverage), not every position.</p>
-<p><strong>Pair it with.</strong> Funding &amp; OI (is the crowded side paying to stay
-on?), spot CVD / aggressor flow (is anyone pushing toward the cluster?), and Faro’s
-existing realized <em>Liquidation Volume</em> (did the latent fuel actually ignite?).</p>
+<p><strong>What it should NOT be used for.</strong> Not a price <em>forecast</em> and not a
+timing trigger — clusters can sit unlit for a long time, and levels often act as
+<em>magnets</em> rather than walls. It is a <em>conditional risk geography</em>, not a
+directional signal, and it reflects a <em>sample</em> of the market (see coverage).</p>
+<p><strong>Pair it with.</strong> Funding &amp; OI (is the crowded side paying to stay on?),
+spot CVD / aggressor flow (is anyone pushing toward the cluster?), and Faro’s existing
+realized <em>Liquidation Volume</em> (did the latent fuel actually ignite?).</p>
 
-<h2>4 · Visualization Recommendation</h2>
+  <div class="sec-head" style="margin-top:38px"><span class="sec-num">04</span><h2>Visualization in Faro</h2></div>
 <ul>
-<li><strong>Chart type:</strong> a horizontal liquidation-density ladder (notional by
-price level, long vs short) with the mark price line and a ±5% proximity band — exactly
-the top chart above — plus a CFI gauge and a regime-banded CFI history sparkline.</li>
+<li><strong>Chart type:</strong> the horizontal liquidation-density ladder above
+(notional by price, long vs short) with the mark line and ±5% band, plus the CFI gauge and
+a regime-banded history sparkline.</li>
 <li><strong>Time horizon:</strong> the map is a live snapshot; the CFI history reads best
-over hours-to-days to see fragility build or bleed off.</li>
+over hours-to-days to watch fragility build or bleed off.</li>
 <li><strong>Overlays:</strong> mark/oracle, funding sign, OI; optionally Faro’s realized
-Liquidation Volume on the same price axis to show fuel → ignition.</li>
-<li><strong>Thresholds / regimes:</strong> green/amber/red CFI bands (calm/elevated/
-fragile), annotated asymmetry, and alertable cluster-proximity triggers.</li>
-<li><strong>Where in Faro:</strong> the BTC perp / derivatives page, in a “positioning &amp;
-risk” tab, and as an agent-readable signal (regime + asymmetry + nearest cluster) the
-AI can cite with a confidence level.</li>
+Liquidation Volume on the same price axis (fuel → ignition).</li>
+<li><strong>Thresholds:</strong> green/amber/red CFI bands, annotated asymmetry, alertable
+cluster-proximity triggers.</li>
+<li><strong>Placement:</strong> the BTC perp / derivatives page, in a positioning &amp; risk
+tab, and as an agent-readable signal (regime + asymmetry + nearest cluster) the AI can cite
+with a confidence level.</li>
 </ul>
 
-<h2>5 · Data Quality, Freshness &amp; Reconciliation</h2>
-<p>This is the part a Head of Data is actually accountable for. Current run:</p>
+  <div class="sec-head" style="margin-top:38px"><span class="sec-num">05</span><h2>Data Quality, Freshness &amp; Reconciliation</h2></div>
+<p>The part a Head of Data is actually accountable for. Current run:</p>
 <table>
-<tr><th>Check</th><th>Value</th><th>How it is handled</th></tr>
-<tr><td>Freshness</td><td><span id="fresh-cell">see badge</span></td><td>stale &gt; 2 cadences → alert + banner</td></tr>
-<tr><td>Coverage vs market OI</td><td>22.9% ($442.92M of $1.93B)</td><td>reported as an explicit bound, never hidden</td></tr>
-<tr><td>Positions kept / queried</td><td>46 kept · 300 wallets</td><td>thin sample → confidence downgraded</td></tr>
-<tr><td><code>liquidationPx = null</code></td><td>19 dropped</td><td>cross-margin; trigger not placeable per-position</td></tr>
-<tr><td>Dust filtered (&lt; $10k)</td><td>5 dropped</td><td>dust returns garbage liquidationPx</td></tr>
-<tr><td>Far / degenerate (&gt; 60%)</td><td>25 dropped</td><td>numerically unreliable; irrelevant to near-term cascade</td></tr>
+<tr><th>Check</th><th>Value</th><th>Handling</th></tr>
+<tr><td>Freshness</td><td><span id="fresh-cell">live</span></td><td>stale &gt; 2 cadences → alert + banner</td></tr>
+<tr><td>Coverage vs OI</td><td>22.9%</td><td>reported as an explicit bound, never hidden</td></tr>
+<tr><td>Positions / wallets</td><td>46 / 300</td><td>thin sample → confidence downgraded</td></tr>
+<tr><td>liquidationPx = null</td><td>19 dropped</td><td>cross-margin; trigger not placeable per-position</td></tr>
+<tr><td>Dust (&lt; $10k)</td><td>5 dropped</td><td>dust returns garbage liquidationPx</td></tr>
+<tr><td>Far / degenerate (&gt; 60%)</td><td>25 dropped</td><td>numerically unreliable; irrelevant near-term</td></tr>
 </table>
-<p><strong>Reconciliation.</strong> Because no endpoint returns the full position book,
-we cannot reconcile to 100% of OI. Instead we reconcile what we <em>can</em>: sampled
-liquidable notional against total OI (the coverage ratio above), and mark vs oracle
-price (drift &gt; a threshold flags a data-quality event). The honest statement is:
-<em>this is a high-coverage sample of the most active wallets, not a census.</em></p>
-<div class="callout warn"><strong>Provenance &amp; caveat.</strong> Approximate market coverage from a wallet sample; not the full order book. liquidationPx is exchange-provided.
-The leaderboard/activity feed used for wallet discovery is an <em>undocumented</em>
-Hyperliquid frontend endpoint and is treated as a PoC stand-in for a production
-fills-WebSocket discovery process.</div>
+<p><strong>Reconciliation.</strong> Because no endpoint returns the full position book, we
+cannot reconcile to 100% of OI. Instead we reconcile what we <em>can</em>: sampled
+liquidable notional ($442.92M) against total OI
+($1.93B) — the coverage ratio above — and mark vs oracle drift (a large gap
+flags a data-quality event). The honest statement: <em>a high-coverage sample of the most
+active wallets, not a census.</em></p>
+<div class="callout warn"><p><strong>Provenance &amp; caveat.</strong> Approximate market coverage from a wallet sample; not the full order book. liquidationPx is exchange-provided. The
+leaderboard/activity feed used for wallet discovery is an <em>undocumented</em> Hyperliquid
+frontend endpoint, treated as a PoC stand-in for a production fills-WebSocket discovery
+process.</p></div>
 
-<h2>6 · Methodology</h2>
+  <div class="sec-head" style="margin-top:38px"><span class="sec-num">06</span><h2>Methodology</h2></div>
 <p>For each qualifying position <em>i</em> with liquidable notional <em>N<sub>i</sub></em>
 and fractional distance to its trigger <em>d<sub>i</sub> = |liqPx − mark| / mark</em>, the
-proximity weight is <code>K(d) = exp(−d/τ)</code> with τ = 8%. Then:</p>
+proximity weight is <code>K(d) = exp(−d/τ)</code> with τ = 8%.</p>
 <ul>
 <li><strong>CFI</strong> = 100 · Σ N<sub>i</sub>·K(d<sub>i</sub>) / Σ N<sub>i</sub> — the
 notional-weighted average proximity (bounded 0–100; a smooth kernel is used so a single
 dust position on the mark can’t blow up the index, unlike a raw 1/d weight).</li>
 <li><strong>Asymmetry</strong> = (short_pressure − long_pressure) / (short_pressure +
-long_pressure), where side pressure = Σ N·K(d) on that side.</li>
+long_pressure), side pressure = Σ N·K(d).</li>
 </ul>
-<p>Regime bands (calm &lt; 25, elevated &lt; 50, else fragile) are illustrative
-starting points to be calibrated on the accumulating CFI history.</p>
-
-</div>
+<p>Regime bands (calm &lt; 25, elevated &lt; 50, else fragile) are illustrative starting
+points, to be calibrated on the accumulating CFI history.</p>
+</section>
 
 <footer>
-  Generated 2026-06-08T12:43:51+00:00 UTC · BTC mark $63,418 · CFI 13.4 ·
-  asymmetry +0.48 · coverage 22.9%.<br/>
-  Proof-of-concept for the Faro Head of Data challenge. Not investment advice; a sampled,
+  <span class="live">Generated 2026-06-08T12:43:51+00:00 UTC · BTC $63,418 · CFI 13.4 · asymmetry +0.48 · coverage 22.9%</span><br/>
+  Proof-of-concept for the Faro Head of Data challenge. Not investment advice — a sampled,
   forward-looking risk estimate with the caveats stated above.
 </footer>
 </div>
 
 <script>
-  // Client-side freshness so the "X ago" is correct whenever the page is viewed.
   const generated = new Date("2026-06-08T12:43:51+00:00Z".replace("+00:00Z","Z"));
   function tick() {
     const mins = Math.max(0, Math.round((Date.now() - generated.getTime())/60000));
-    const label = mins < 1 ? "just now" : mins + " min ago";
-    const stale = mins > 20;
+    const label = mins < 1 ? "just now" : (mins < 60 ? mins + " min ago"
+                  : Math.floor(mins/60) + "h " + (mins%60) + "m ago");
+    const stale = mins > 25;
     const el = document.getElementById("freshness");
-    el.textContent = "updated " + label + (stale ? " · STALE" : "");
-    el.style.color = stale ? "#ef4444" : "#9ca3af";
-    el.style.borderColor = stale ? "#7f1d1d" : "#1f2937";
+    if (el) el.innerHTML = "updated <b>" + label + "</b>" + (stale ? " · STALE" : "");
     const fc = document.getElementById("fresh-cell");
     if (fc) fc.textContent = "updated " + label;
   }
-  tick(); setInterval(tick, 30000);
+  tick(); setInterval(tick, 20000);
 </script>
 </body>
 </html>

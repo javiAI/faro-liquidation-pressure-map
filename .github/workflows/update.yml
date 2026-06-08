@@ -1,32 +1,37 @@
 name: update-liquidation-map
 
-# Live demo runner. GitHub Actions is the always-on scheduler (the Airflow DAG in
-# dags/ is the PoC orchestration artifact). Every ~10 min we rebuild the map and
-# republish the page by committing docs/index.html back to the branch — GitHub
-# Pages (configured to serve /docs on main) picks it up automatically.
+# RELIABLE ~10-minute cadence on a free public repo.
 #
-# We commit data/ back too so the Cascade Fragility Index time-series ACCUMULATES
-# across runs (runners are ephemeral) — that forward history is the whole point,
-# since the map itself is not backfillable.
+# Why not just `cron: "*/10 * * * *"`? GitHub's scheduled triggers are best-effort
+# and heavily throttled on low-activity repos — in practice "*/10" fires roughly
+# once an hour, which is exactly the "sporadic updates" problem.
 #
-# Caveats (stated honestly): GitHub's cron is best-effort and can be delayed under
-# load, and scheduled workflows pause after ~60 days of repo inactivity.
+# Fix: a single job runs an INTERNAL loop that rebuilds the map every 10 minutes for
+# ~110 minutes, committing each snapshot. An hourly cron (infrequent crons ARE
+# honored reliably) plus `cancel-in-progress` relaunches a fresh loop each hour, so
+# the 10-min cadence is continuous even if a cron tick is delayed or skipped. Public
+# repos get unlimited Actions minutes, so the long-running loop is free.
+#
+# The Airflow DAG in dags/ remains the PoC orchestration artifact; this is just the
+# always-on runner for the live page. The map is not backfillable, so the CFI
+# time-series accumulates forward (committed back to data/).
 
 on:
   schedule:
-    - cron: "*/10 * * * *"     # best-effort every 10 minutes
-  workflow_dispatch: {}         # manual + first run
+    - cron: "7 * * * *"        # hourly relauncher (offset off the congested :00)
+  workflow_dispatch: {}
 
 permissions:
-  contents: write               # commit docs/ + accumulating history back
+  contents: write
 
 concurrency:
   group: liq-map-update
-  cancel-in-progress: false     # never interrupt a run mid-publish
+  cancel-in-progress: true      # each relaunch replaces the running loop
 
 jobs:
-  build:
+  loop:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -38,17 +43,25 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run pipeline (extract → validate → transform → load → render)
-        run: python run_pipeline.py --wallets 300
-
-      - name: Publish (commit docs + accumulating history)
+      - name: Update loop (pipeline every ~10 min for ~110 min)
         run: |
           git config user.name  "liq-map-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add docs/index.html data/metrics_history.csv data/latest_snapshot.json data/wallet_universe.csv
-          if git diff --staged --quiet; then
-            echo "no changes to commit"
-          else
-            git commit -m "data: liquidation map snapshot [skip ci]"
-            git push
-          fi
+          END=$(( $(date +%s) + 110*60 ))
+          i=0
+          while :; do
+            i=$((i+1))
+            echo "::group::iteration $i ($(date -u +%H:%M:%SZ))"
+            python run_pipeline.py --wallets 300 || echo "pipeline iteration failed, continuing"
+            git add docs/index.html data/metrics_history.csv data/latest_snapshot.json data/wallet_universe.csv
+            if git diff --staged --quiet; then
+              echo "no changes to commit"
+            else
+              git commit -m "data: liquidation map snapshot [skip ci]"
+              git pull --rebase --autostash origin main || true
+              git push || echo "push failed; retrying next iteration"
+            fi
+            echo "::endgroup::"
+            [ "$(date +%s)" -ge "$END" ] && break
+            sleep 600
+          done
