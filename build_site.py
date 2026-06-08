@@ -138,6 +138,9 @@ _CSS = r"""
     border:1px solid var(--hair-strong); border-radius:999px; color:var(--muted);
     display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,0.012); }
   .tag b { color:var(--bone); font-weight:500; }
+  .tag.btn { cursor:pointer; background:rgba(232,161,58,0.10); border-color:var(--gold); color:var(--gold); font:inherit; font-family:var(--mono); }
+  .tag.btn:hover { background:rgba(232,161,58,0.20); }
+  .tag.btn:disabled { opacity:.55; cursor:default; }
   .live-dot { width:7px; height:7px; border-radius:50%; background:var(--long); position:relative; }
   .live-dot::after { content:""; position:absolute; inset:-4px; border-radius:50%;
     border:1px solid var(--long); animation:pulse 2s ease-out infinite; }
@@ -177,6 +180,7 @@ _CSS = r"""
   .sec-num { font-family:var(--serif); font-size:30px; color:var(--gold); font-weight:600; line-height:1; font-variant-numeric:tabular-nums; }
   .sec-head h2 { font-family:var(--serif); font-weight:600; font-size:25px; letter-spacing:-.01em; margin:0; }
   .memo p, .memo li { font-size:15.5px; color:#cdc3b3; max-width:70ch; }
+  .memo h3 { font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); margin:22px 0 4px; }
   .memo strong { color:var(--bone); font-weight:600; } .memo em { color:#dcd2c2; }
   ul { padding-left:20px; } li { margin:5px 0; }
   code { font-family:var(--mono); background:var(--ink-2); border:1px solid var(--hair); padding:1px 6px; border-radius:5px; font-size:12.5px; color:#e9c98c; }
@@ -307,6 +311,7 @@ function renderQuality(d){
   setText('q-null',q.n_null_liqpx+' dropped'); setText('q-dust',q.n_dust_filtered+' dropped');
   setText('q-far',q.n_far_filtered+' dropped');
   setText('q-recon','sampled '+money(cov.sampled_notional_usd)+' vs OI '+money(m.oi_usd));
+  setText('q-cov2',(cov.coverage_ratio*100).toFixed(0)+'%');
   setText('foot-live','BTC $'+num(m.mark_px)+' · CFI '+s.cfi.toFixed(1)+' · asymmetry '+(s.asymmetry>=0?'+':'')+s.asymmetry.toFixed(2)+' · coverage '+(cov.coverage_ratio*100).toFixed(1)+'%');
 }
 
@@ -340,7 +345,30 @@ async function poll(){
   }catch(e){}
 }
 
+// Manual "↻ update" button. By default it force-refreshes to the freshest committed
+// point and polls aggressively for ~3 min to catch a brand-new one the moment it lands.
+// Set DISPATCH_URL to a tiny workflow-dispatch proxy (see workers/dispatch-worker.js)
+// to make the button trigger a REAL on-demand extraction.
+const DISPATCH_URL = "";
+async function manualUpdate(){
+  const btn=document.getElementById('update-btn'); if(!btn)return;
+  btn.disabled=true; const orig=btn.textContent; btn.textContent='↻ updating…';
+  const startGen=window.__DATA__.generated_at, t0=Date.now();
+  if(DISPATCH_URL){ try{ await fetch(DISPATCH_URL,{method:'POST',mode:'cors'}); }catch(e){} }
+  const iv=setInterval(async()=>{
+    try{
+      const r=await fetch('./data.json?t='+Date.now(),{cache:'no-store'}); const j=await r.json();
+      if(j && j.generated_at!==window.__DATA__.generated_at){
+        window.__DATA__=j; renderAll(j);
+        const f=document.getElementById('freshness'); if(f){f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');}
+      }
+      if((j && j.generated_at!==startGen) || Date.now()-t0>180000){ clearInterval(iv); btn.disabled=false; btn.textContent=orig; }
+    }catch(e){ if(Date.now()-t0>180000){ clearInterval(iv); btn.disabled=false; btn.textContent=orig; } }
+  },4000);
+}
+
 document.querySelectorAll('.toggle-btn').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.v)));
+const _ub=document.getElementById('update-btn'); if(_ub) _ub.addEventListener('click',manualUpdate);
 renderAll(window.__DATA__);
 setInterval(poll,60000);
 setInterval(setFresh,20000);
@@ -367,7 +395,7 @@ def _hero(snapshot: dict[str, Any]) -> str:
      <span class="tag">confidence <b id="conf-badge" style="color:{conf_color}">{conf}</b></span>
      <span class="tag"><span class="live-dot"></span><span id="freshness">live</span></span>
      <span class="tag">auto-refresh <b>~60s</b></span>
-     <span class="tag">source <b>Hyperliquid API</b></span>
+     <button id="update-btn" class="tag btn" title="Fetch the freshest point now (a new point is produced every ~10 min; configure a dispatch endpoint for true on-demand extraction)">↻ update</button>
   </div>
 </header>
 <div class="rule reveal" style="animation-delay:.06s"></div>
@@ -523,6 +551,52 @@ a dust position on the mark can’t blow it up). <strong>Asymmetry</strong> = (s
 long_pressure) / (sum). The Fig.01 curve is gaussian-smoothed for legibility (area ∝ notional);
 hover reports real notional within ±1.25%. Regime bands (calm &lt; 25, elevated &lt; 50, else
 fragile) are illustrative pending calibration on the accumulating history.</p>
+
+  <div class="sec-head" style="margin-top:38px"><span class="sec-num">07</span><h2>Wallet Universe, Coverage &amp; Path to Production</h2></div>
+<h3>How the sample is built (current PoC)</h3>
+<p><strong>Sequence.</strong> (1) Pull the public leaderboard/activity feed (~38k addresses).
+(2) Rank by <strong>activity_score = week volume + month volume</strong> and take the
+<strong>top 2,000</strong> — turnover is the best proxy for wallets actively carrying
+directional perp risk. (3) Query their live state concurrently via
+<code>clearinghouseState</code>, rate-limited to ~7.5 req/s (≈75% of the 1,200-weight/min
+budget; that call costs weight 2). (4) Keep those holding a qualifying open BTC position
+(notional ≥ $10k, <code>liquidationPx</code> present, within 60% of mark) — typically a few
+hundred at any instant — and aggregate them into the map.</p>
+<p><strong>Two selection layers, made explicit.</strong> The <em>2,000</em> are chosen once a
+day by activity; the on-map subset is <em>not</em> a second pick — it is simply whichever of the
+2,000 currently hold a live qualifying BTC position, which changes every snapshot as positions
+open and close.</p>
+<h3>Why this sample is enough for the PoC</h3>
+<p>Liquidable open interest is heavily concentrated in the most active wallets, so a
+high-activity sample captures the cascade-relevant structure — the large, near-price clusters
+that actually move price — while the long tail is many tiny positions that barely affect a
+cascade. This run reaches <strong><span id="q-cov2">{cov['coverage_ratio']:.0%}</span> of
+reported BTC OI</strong>. (Exchange OI is one-sided, so total open-position notional ≈ 2× OI;
+~half of reported OI is still a large, representative slice of what matters.)</p>
+<h3>Keeping it relevant over time</h3>
+<p>The universe is <strong>rebuilt daily</strong>, re-ranked by recent activity, so wallets that
+go quiet drop out and newly-active ones enter automatically — the list can't rot into dormant
+addresses. Staleness is tracked by a persisted build timestamp (robust to CI file mtimes), not
+the file date.</p>
+<h3>What “the real metric” looks like (production &amp; backfill — described, not built)</h3>
+<ul>
+<li><strong>Full population, not a sample:</strong> subscribe to the Hyperliquid fills WebSocket
+and keep a rolling registry of <em>every</em> address trading BTC, ranked by trailing volume —
+discovery becomes continuous instead of a daily leaderboard snapshot.</li>
+<li><strong>Event-sourced position engine:</strong> derive each wallet's open position by applying
+its fills + funding + liquidations in real time, instead of polling <code>clearinghouseState</code>
+per wallet. This scales to the whole market and lifts the rate-limit ceiling on coverage → ~100%
+of OI.</li>
+<li><strong>Historical backfill:</strong> replay the historical fill/funding/liquidation tape
+(per-wallet <code>userFillsByTime</code> plus an archival node / data export for the full feed)
+from each wallet's first trade forward, reconstructing the open-position book — and thus the
+liquidation map and CFI — at any past timestamp. Caveat: per-wallet fill history is capped, so
+genuine genesis-to-now reconstruction needs the archival feed and a snapshot anchor for positions
+opened before the available window.</li>
+<li><strong>Continuous reconciliation:</strong> check the engine's derived aggregate OI against the
+exchange's reported OI per asset every cycle as a live data-quality gate; divergence flags a missed
+fill or a bug.</li>
+</ul>
 </section>
 <footer>
   <span class="live" id="foot-live">BTC ${m['mark_px']:,.0f}</span><br/>

@@ -47,6 +47,7 @@ store CFI every run.
 from __future__ import annotations
 
 import math
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
@@ -131,27 +132,33 @@ def fetch_positions(
     addresses: list[str],
     coin: str = "BTC",
     *,
+    max_workers: int = 16,
     progress_every: int = 0,
 ) -> tuple[list[dict[str, Any]], int]:
-    """Fetch the `coin` position for each address. Returns (positions, n_errors).
+    """Fetch the `coin` position for each address concurrently. Returns (positions, n_errors).
 
-    Wallets with no position are simply skipped. Per-wallet network errors are
-    counted (not fatal): a liquidation map degraded by a few missing wallets is
-    far better than no map, and the error count feeds observability downstream.
+    Concurrency only hides network latency — the client's shared token bucket caps the
+    actual request rate, so we never exceed the API budget no matter how many workers.
+    Wallets with no position are skipped; per-wallet errors are counted (not fatal):
+    a map degraded by a few missing wallets beats no map, and the count feeds
+    observability downstream.
     """
     positions: list[dict[str, Any]] = []
     n_errors = 0
-    for i, addr in enumerate(addresses, start=1):
-        try:
-            pos = client.get_position(addr, coin=coin)
-        except Exception:  # noqa: BLE001 - counted, not fatal
-            n_errors += 1
-            continue
-        if pos is not None:
-            positions.append(pos)
-        if progress_every and i % progress_every == 0:
-            print(f"    …queried {i}/{len(addresses)} wallets, "
-                  f"{len(positions)} {coin} positions, {n_errors} errors")
+    done = 0
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futures = {ex.submit(client.get_position, a, coin): a for a in addresses}
+        for fut in as_completed(futures):
+            done += 1
+            try:
+                pos = fut.result()
+                if pos is not None:
+                    positions.append(pos)
+            except Exception:  # noqa: BLE001 - counted, not fatal
+                n_errors += 1
+            if progress_every and done % progress_every == 0:
+                print(f"    …queried {done}/{len(addresses)} wallets, "
+                      f"{len(positions)} {coin} positions, {n_errors} errors")
     return positions, n_errors
 
 

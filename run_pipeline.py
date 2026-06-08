@@ -29,18 +29,24 @@ UNIVERSE_MAX_AGE_H = 24  # refresh the wallet universe at most once a day
 def ensure_universe(n: int, max_age_h: float = UNIVERSE_MAX_AGE_H) -> list[str]:
     """Return the wallet universe, refreshing from the leaderboard only if stale.
 
-    Keeping the ~30MB leaderboard download on a slow cadence (daily) while the map
-    runs every ~10 min is the whole point of caching the universe to disk.
+    Keeping the ~30MB leaderboard download on a slow cadence (daily) while the map runs
+    every ~10 min is the whole point of caching the universe. Staleness is judged by the
+    persisted build time (see wallets.universe_age_hours), NOT file mtime — git checkouts
+    on CI reset mtimes, which would otherwise make the universe look forever-fresh and let
+    the wallet list rot into irrelevance. The daily rebuild re-ranks by recent activity, so
+    wallets that have gone quiet drop out and newly-active ones come in automatically.
     """
-    path = wallets.UNIVERSE_CSV
-    fresh = os.path.exists(path) and (time.time() - os.path.getmtime(path)) < max_age_h * 3600
-    if not fresh:
-        print(f"[universe] refreshing top {n} wallets from leaderboard…")
-        wallets.refresh_and_save(n=n)
+    age = wallets.universe_age_hours()
+    cached = wallets.load_universe() if os.path.exists(wallets.UNIVERSE_CSV) else []
+    if age is None or age > max_age_h or len(cached) < n:
+        reason = ("missing" if not cached else
+                  f"stale ({age:.1f}h)" if (age is not None and age > max_age_h)
+                  else f"too small ({len(cached)}<{n})")
+        print(f"[universe] refreshing top {n} wallets from leaderboard ({reason})…")
+        cached = wallets.refresh_and_save(n=n)["address"].astype(str).tolist()
     else:
-        age_h = (time.time() - os.path.getmtime(path)) / 3600
-        print(f"[universe] using cached universe (age {age_h:.1f}h)")
-    return wallets.load_universe()
+        print(f"[universe] using cached universe (age {age:.1f}h, refresh at {max_age_h}h)")
+    return cached[:n]   # top-N by activity rank
 
 
 def validate_map(m, *, min_positions: int = 5) -> list[str]:
@@ -64,7 +70,7 @@ def validate_map(m, *, min_positions: int = 5) -> list[str]:
     return warnings
 
 
-def run(n_wallets: int = 300, *, render: bool = True) -> None:
+def run(n_wallets: int = 2000, *, render: bool = True) -> None:
     t0 = time.time()
     addresses = ensure_universe(n_wallets)
 
@@ -93,7 +99,7 @@ def run(n_wallets: int = 300, *, render: bool = True) -> None:
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Run the liquidation-pressure pipeline once.")
-    p.add_argument("--wallets", type=int, default=300)
+    p.add_argument("--wallets", type=int, default=2000)
     p.add_argument("--no-render", action="store_true", help="skip HTML site generation")
     args = p.parse_args()
     run(n_wallets=args.wallets, render=not args.no_render)

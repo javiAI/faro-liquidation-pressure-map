@@ -48,12 +48,13 @@ jobs:
           git config user.name  "liq-map-bot"
           git config user.email "actions@users.noreply.github.com"
           END=$(( $(date +%s) + 110*60 ))
+          CADENCE=600
           i=0
           while :; do
-            i=$((i+1))
+            i=$((i+1)); START=$(date +%s)
             echo "::group::iteration $i ($(date -u +%H:%M:%SZ))"
-            python run_pipeline.py --wallets 300 || echo "pipeline iteration failed, continuing"
-            git add docs/index.html docs/data.json data/metrics_history.csv data/cfi_history.jsonl data/map_history.jsonl data/latest_snapshot.json data/wallet_universe.csv
+            python run_pipeline.py --wallets 2000 || echo "pipeline iteration failed, continuing"
+            git add docs/index.html docs/data.json data/metrics_history.csv data/cfi_history.jsonl data/map_history.jsonl data/latest_snapshot.json data/wallet_universe.csv data/wallet_universe_meta.json
             if git diff --staged --quiet; then
               echo "no changes to commit"
             else
@@ -63,5 +64,9 @@ jobs:
             fi
             echo "::endgroup::"
             [ "$(date +%s)" -ge "$END" ] && break
-            sleep 600
+            # adaptive sleep: keep ~10 min between iteration STARTS despite the longer fetch
+            ELAPSED=$(( $(date +%s) - START )); SLEEP=$(( CADENCE - ELAPSED ))
+            [ "$SLEEP" -lt 60 ] && SLEEP=60
+            echo "iteration took ${ELAPSED}s; sleeping ${SLEEP}s"
+            sleep "$SLEEP"
           done

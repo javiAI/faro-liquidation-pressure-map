@@ -47,7 +47,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from airflow.decorators import dag, task  # noqa: E402
 from airflow.exceptions import AirflowFailException  # noqa: E402
 
-N_WALLETS = 300
+N_WALLETS = 2000               # ~47% of BTC OI at ~7.5 req/s concurrent (~4.5 min/run)
 COVERAGE_FLOOR = 0.05          # below this, alert: sample too thin to trust
 STALENESS_FACTOR = 2           # alert if mark/oracle look stale vs cadence
 MIN_POSITIONS = 5

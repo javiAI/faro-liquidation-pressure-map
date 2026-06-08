@@ -1,26 +1,21 @@
 """
-hl_client.py — a small, defensive client for the Hyperliquid public API.
+hl_client.py — a small, defensive, rate-limited client for the Hyperliquid public API.
 
-This is the single place that talks to the network. Everything else (the metric,
-the DAG, the GitHub Actions runner) imports from here so retry/rate-limit/parsing
-logic lives in exactly one spot.
+Single place that talks to the network. Everything else imports from here so retry /
+rate-limit / parsing logic lives in exactly one spot.
 
-Design choices, all defensible in a technical conversation:
-  * One shared requests.Session (connection reuse, lower latency).
-  * Retries with exponential backoff on transient errors only.
-  * A soft client-side rate limiter (min interval between calls). The /info
-    endpoint is weight-based (~1200 weight/min/IP; clearinghouseState ~weight 2),
-    so ~300 wallets/run is well within budget — but we stay gentle on purpose.
-  * Endpoints:
-      - POST /info                              (documented, stable)
-      - GET  stats-data .../leaderboard         (UNDOCUMENTED frontend feed; used
-                                                 only for wallet discovery and
-                                                 flagged as a caveat in the memo)
+Rate limiting (verified against the docs): the /info endpoint shares an aggregated
+budget of 1200 request-weight per minute per IP. `clearinghouseState` costs weight 2
+(→ 600 calls/min ceiling); `metaAndAssetCtxs` costs 20. We stay well under that with a
+thread-safe token bucket (default ~7.5 calls/s ≈ 450/min ≈ 75% of the ceiling) so we
+can fetch many wallets concurrently without ever tripping the limit. The leaderboard
+lives on a different host and does not count against this budget.
 """
 
 from __future__ import annotations
 
 import json
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -31,13 +26,17 @@ INFO_URL = "https://api.hyperliquid.xyz/info"
 LEADERBOARD_URL = "https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
 DEFAULT_COIN = "BTC"
 
+# clearinghouseState weight = 2, limit = 1200/min → 600 calls/min ceiling.
+# Default to ~75% of that, expressed as calls/second.
+DEFAULT_RATE_PER_SEC = 7.5
+
 
 @dataclass
 class MarketContext:
     """BTC market context snapshot from metaAndAssetCtxs.
 
-    `mark_px` is the price Hyperliquid uses as the liquidation reference, so it is
-    the anchor for every distance-to-liquidation computation downstream.
+    `mark_px` is the price Hyperliquid uses as the liquidation reference, the anchor
+    for every distance-to-liquidation computation downstream.
     """
 
     coin: str
@@ -53,43 +52,66 @@ class MarketContext:
         return self.open_interest_coin * self.mark_px
 
 
+class _TokenBucket:
+    """A simple thread-safe token bucket: at most `rate` permits granted per second."""
+
+    def __init__(self, rate: float, capacity: float | None = None) -> None:
+        self.rate = float(rate)
+        self.capacity = float(capacity if capacity is not None else max(rate, 1.0))
+        self.tokens = self.capacity
+        self._last = time.monotonic()
+        self._lock = threading.Lock()
+
+    def acquire(self) -> None:
+        while True:
+            with self._lock:
+                now = time.monotonic()
+                self.tokens = min(self.capacity, self.tokens + (now - self._last) * self.rate)
+                self._last = now
+                if self.tokens >= 1.0:
+                    self.tokens -= 1.0
+                    return
+                wait = (1.0 - self.tokens) / self.rate
+            time.sleep(wait)
+
+
 class HyperliquidClient:
-    """Thin wrapper around the public Hyperliquid endpoints."""
+    """Thin, rate-limited, thread-safe wrapper around the public Hyperliquid endpoints."""
 
     def __init__(
         self,
         *,
-        min_interval_s: float = 0.08,
+        rate_per_sec: float = DEFAULT_RATE_PER_SEC,
         retries: int = 4,
         backoff: float = 1.6,
         timeout_s: float = 10.0,
     ) -> None:
-        self._session = requests.Session()
-        self._session.headers.update({"Content-Type": "application/json"})
-        self._min_interval_s = min_interval_s
+        self._limiter = _TokenBucket(rate_per_sec)
         self._retries = retries
         self._backoff = backoff
         self._timeout_s = timeout_s
-        self._last_call_ts = 0.0
+        self._local = threading.local()      # one requests.Session per worker thread
 
     # ------------------------------------------------------------------ internal
-    def _throttle(self) -> None:
-        """Sleep just enough to keep calls spaced by `min_interval_s`."""
-        elapsed = time.monotonic() - self._last_call_ts
-        if elapsed < self._min_interval_s:
-            time.sleep(self._min_interval_s - elapsed)
-        self._last_call_ts = time.monotonic()
+    def _session(self) -> requests.Session:
+        s = getattr(self._local, "session", None)
+        if s is None:
+            s = requests.Session()
+            s.headers.update({"Content-Type": "application/json"})
+            adapter = requests.adapters.HTTPAdapter(pool_connections=4, pool_maxsize=4)
+            s.mount("https://", adapter)
+            self._local.session = s
+        return s
 
     def _post_info(self, payload: dict[str, Any]) -> Any:
-        """POST to /info with throttle + retry/backoff. Raises on final failure."""
+        """POST to /info with global rate-limiting + retry/backoff. Raises on final failure."""
         last_exc: Exception | None = None
         for attempt in range(self._retries):
-            self._throttle()
+            self._limiter.acquire()
             try:
-                resp = self._session.post(
+                resp = self._session().post(
                     INFO_URL, data=json.dumps(payload), timeout=self._timeout_s
                 )
-                # 429 / 5xx are transient: retry. 4xx (other) are not.
                 if resp.status_code == 429 or resp.status_code >= 500:
                     raise requests.HTTPError(f"status {resp.status_code}")
                 resp.raise_for_status()
@@ -103,11 +125,7 @@ class HyperliquidClient:
 
     # -------------------------------------------------------------------- public
     def get_market_context(self, coin: str = DEFAULT_COIN) -> MarketContext:
-        """Return market context for `coin` from metaAndAssetCtxs.
-
-        metaAndAssetCtxs returns [meta, assetCtxs] as parallel lists indexed by
-        the perp universe; we locate the coin by name.
-        """
+        """Return market context for `coin` from metaAndAssetCtxs."""
         meta, asset_ctxs = self._post_info({"type": "metaAndAssetCtxs"})
         universe = meta["universe"]
         idx = next(i for i, a in enumerate(universe) if a["name"] == coin)
@@ -123,11 +141,7 @@ class HyperliquidClient:
         )
 
     def get_position(self, address: str, coin: str = DEFAULT_COIN) -> dict[str, Any] | None:
-        """Return the raw `coin` perp position for one wallet, or None.
-
-        We keep `liquidationPx` as-is (may be None) so the caller can decide how to
-        treat missing values rather than silently coercing them.
-        """
+        """Return the raw `coin` perp position for one wallet, or None. Thread-safe."""
         state = self._post_info({"type": "clearinghouseState", "user": address})
         for ap in state.get("assetPositions", []):
             pos = ap.get("position", {})
@@ -152,13 +166,13 @@ class HyperliquidClient:
         return None
 
     def fetch_leaderboard(self) -> list[dict[str, Any]]:
-        """Fetch the raw leaderboard rows (undocumented HL frontend feed).
+        """Fetch the raw leaderboard rows (undocumented HL frontend feed, separate host).
 
         Each row: ethAddress, accountValue, displayName, windowPerformances
         (list of [window, {pnl, roi, vlm}] for day/week/month/allTime).
         ~30MB payload, so callers should fetch this rarely (e.g. on universe refresh).
         """
-        resp = self._session.get(LEADERBOARD_URL, timeout=60)
+        resp = self._session().get(LEADERBOARD_URL, timeout=60)
         resp.raise_for_status()
         data = resp.json()
         return data["leaderboardRows"] if isinstance(data, dict) else data

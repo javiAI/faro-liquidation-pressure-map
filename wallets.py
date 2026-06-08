@@ -27,7 +27,9 @@ universe is refreshed on a slower cadence (e.g. daily).
 
 from __future__ import annotations
 
+import json
 import os
+from datetime import datetime, timezone
 from typing import Any
 
 import pandas as pd
@@ -36,6 +38,13 @@ from hl_client import HyperliquidClient
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 UNIVERSE_CSV = os.path.join(DATA_DIR, "wallet_universe.csv")
+# A sidecar with the logical build time. We rely on this (not the file mtime) because
+# git checkouts on CI reset mtimes, which would make the universe look forever-fresh
+# and never refresh — letting the wallet list silently rot. With built_at persisted,
+# the daily refresh works regardless of how the file got onto disk.
+UNIVERSE_META = os.path.join(DATA_DIR, "wallet_universe_meta.json")
+
+DEFAULT_N = 2000  # ~47% of BTC OI coverage at ~7.5 req/s, ~4.5 min/run (measured)
 
 
 def _window_metric(row: dict[str, Any], window: str, field: str) -> float:
@@ -50,13 +59,17 @@ def _window_metric(row: dict[str, Any], window: str, field: str) -> float:
     return 0.0
 
 
-def build_universe(n: int = 300, client: HyperliquidClient | None = None) -> pd.DataFrame:
+def build_universe(n: int = DEFAULT_N, client: HyperliquidClient | None = None) -> pd.DataFrame:
     """Select the top-N most active wallets and return them as a DataFrame.
 
-    Activity score = week volume + month volume. We deliberately weight volume
-    (turnover) rather than PnL or account size, because turnover is the best proxy
-    for "currently holding directional perp risk" — which is exactly what a
-    liquidation map needs.
+    SELECTION CRITERION (this is the answer to "how are the wallets chosen?"):
+    we rank every leaderboard row by **activity_score = week volume + month volume**
+    and keep the top N. We weight recent turnover (volume) — not PnL or account size —
+    because turnover is the best proxy for "currently holding and rotating directional
+    perp risk", which is exactly the population a liquidation map needs. (Of these N,
+    only those that *currently* hold a qualifying open BTC position — notional ≥ $10k,
+    liquidationPx present, within 60% of mark — actually land on the map each run; that
+    is why ~250 of 2000 appear, and it changes every snapshot as positions open/close.)
     """
     client = client or HyperliquidClient()
     rows = client.fetch_leaderboard()
@@ -86,6 +99,20 @@ def build_universe(n: int = 300, client: HyperliquidClient | None = None) -> pd.
 def save_universe(df: pd.DataFrame, path: str = UNIVERSE_CSV) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     df.to_csv(path, index=False)
+    with open(UNIVERSE_META, "w") as f:
+        json.dump({"built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                   "n": int(len(df))}, f)
+
+
+def universe_age_hours(meta_path: str = UNIVERSE_META) -> float | None:
+    """Hours since the universe was built (from the sidecar), or None if unknown."""
+    if not os.path.exists(meta_path):
+        return None
+    try:
+        built = datetime.fromisoformat(json.load(open(meta_path))["built_at"])
+        return (datetime.now(timezone.utc) - built).total_seconds() / 3600.0
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def load_universe(path: str = UNIVERSE_CSV) -> list[str]:
@@ -102,7 +129,7 @@ def load_universe(path: str = UNIVERSE_CSV) -> list[str]:
     return pd.read_csv(path)["address"].astype(str).tolist()
 
 
-def refresh_and_save(n: int = 300) -> pd.DataFrame:
+def refresh_and_save(n: int = DEFAULT_N) -> pd.DataFrame:
     """Convenience: build the universe and persist it. Returns the DataFrame."""
     df = build_universe(n=n)
     save_universe(df)
@@ -113,7 +140,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Build/refresh the wallet universe.")
-    parser.add_argument("--n", type=int, default=300, help="number of wallets to keep")
+    parser.add_argument("--n", type=int, default=DEFAULT_N, help="number of wallets to keep")
     parser.add_argument("--refresh", action="store_true", help="rebuild from leaderboard")
     args = parser.parse_args()
 
