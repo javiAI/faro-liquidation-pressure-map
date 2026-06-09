@@ -205,10 +205,10 @@ _CSS = r"""
     box-shadow:0 14px 38px rgba(0,0,0,0.55); opacity:0; transform:translateY(-4px); pointer-events:none;
     transition:opacity .15s ease, transform .15s ease; }
   #cardtip.show { opacity:1; transform:none; }
-  /* expand-to-fullscreen + dock-to-side buttons */
-  .expand-btn, .dock-btn { font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
+  /* expand-to-fullscreen button + state */
+  .expand-btn { font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
     border:1px solid var(--hair); border-radius:7px; width:30px; height:26px; cursor:pointer; transition:all .18s ease; }
-  .expand-btn:hover, .dock-btn:hover { color:var(--gold); border-color:var(--gold); }
+  .expand-btn:hover { color:var(--gold); border-color:var(--gold); }
   figure.chart.expanded { position:fixed; inset:2.5vh 2.5vw; z-index:2500; margin:0; overflow:hidden;
     display:flex; flex-direction:column; box-shadow:0 0 0 100vmax rgba(8,6,4,0.82); }
   /* in fullscreen the chart area grows to fill; the chart divs follow (autosize) */
@@ -221,24 +221,31 @@ _CSS = r"""
   figure.chart.expanded .explain { max-width:none; padding:8px 14px 10px; font-size:14px; }
   figure.chart.expanded .legend { padding:2px 14px 8px; }
   body.has-expanded { overflow:hidden; }
-  /* dock-to-side: a sticky panel on the right that holds one figure (wide screens only) */
-  #dock { position:fixed; top:64px; right:14px; bottom:16px; width:42vw; max-width:760px; z-index:1500;
-    display:none; flex-direction:column; overflow:hidden; border:1px solid var(--hair-strong); border-radius:15px;
-    background:linear-gradient(180deg,var(--card),var(--ink-2)); box-shadow:0 26px 74px rgba(0,0,0,0.62); }
-  body.docked #dock { display:flex; }
-  body.docked .wrap { padding-right:calc(42vw + 28px); }
-  .dock-head { display:flex; align-items:center; gap:9px; padding:9px 11px; border-bottom:1px solid var(--hair); }
-  .dock-head .dh-title { flex:1; font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
-  .dock-head button { font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
+  /* floating "picture-in-picture" charts: when the charts scroll out of view they pop into a
+     draggable / resizable overlay on the right. It's an OVERLAY (position:fixed) — it never
+     reflows the page, so the article keeps its full, readable width. Wide screens only. */
+  #pip-bar { display:none; }
+  #charts.floating { position:fixed; z-index:1800; margin:0; overflow:auto; resize:both;
+    width:460px; height:460px; min-width:340px; min-height:260px; max-width:92vw; max-height:90vh;
+    padding:0 11px 12px; border:1px solid var(--hair-strong); border-radius:15px;
+    background:linear-gradient(180deg,var(--card),var(--ink-2)); box-shadow:0 30px 84px rgba(0,0,0,0.66);
+    overscroll-behavior:contain; }
+  #charts.floating #pip-bar { display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:6;
+    margin:0 -11px 4px; padding:9px 12px; cursor:move; user-select:none; touch-action:none;
+    background:var(--card-2); border-bottom:1px solid var(--hair); }
+  #pip-bar .pip-grip { flex:1; font-family:var(--mono); font-size:10.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; }
+  #pip-bar .pip-grip .dots { color:var(--faint); letter-spacing:.05em; }
+  #pip-close { font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
     border:1px solid var(--hair); border-radius:7px; width:28px; height:26px; cursor:pointer; transition:all .18s ease; }
-  .dock-head button:hover { color:var(--gold); border-color:var(--gold); }
-  #dock-body { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:auto; padding:7px; }
-  #dock-body figure.chart { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; margin:0; }
-  /* reuse the fill behaviour so a docked chart grows to fill the panel */
-  #dock figure #ladder-wrap, #dock figure #heatmap-wrap { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-  #dock figure #ladder, #dock figure #heatmap, #dock figure .row-body { flex:1 1 auto; min-height:0; height:auto; }
-  #dock figure #gauge, #dock figure #cfiprice { height:auto; min-height:0; }
-  @media (max-width:1100px) { .dock-btn { display:none; } body.docked .wrap { padding-right:22px; } }
+  #pip-close:hover { color:var(--gold); border-color:var(--gold); }
+  /* compact the charts so both figures read well inside the smaller floating window */
+  #charts.floating .seg { margin-top:6px; }
+  #charts.floating figure.chart { margin:10px 0 12px; }
+  #charts.floating #ladder, #charts.floating #heatmap { height:300px; }
+  #charts.floating #cfiprice, #charts.floating #gauge { height:230px; }
+  #charts.floating .row-body { grid-template-columns:1fr; }
+  #charts.floating .reveal { opacity:1; animation:none; }
   .fig-ctl { display:flex; align-items:center; gap:10px; }
   .row-body { display:grid; grid-template-columns:1fr 2fr; gap:13px; align-items:stretch; }
   /* primary segmented tab control (clearly switchable) */
@@ -554,48 +561,87 @@ function toggleExpand(figId){
 document.addEventListener('keydown',e=>{ if(e.key==='Escape')
   document.querySelectorAll('figure.chart.expanded').forEach(f=>toggleExpand(f.id)); });
 
-// --- dock a figure to a sticky side panel (wide screens only) ---
-// The figure is moved into #dock (a placeholder marks its home so it restores exactly).
-// ‹ › cycle between the dockable figures, ✕ closes and returns the figure to the page.
-const DOCKABLE=['fig-map','fig-frag']; let DOCKED=null;
-function figTitle(figId){ const f=document.getElementById(figId);
-  const c=f&&f.querySelector('figcaption span'); return c?c.textContent:figId; }
-function buildDock(){
-  if(document.getElementById('dock'))return;
-  const dk=document.createElement('div'); dk.id='dock';
-  dk.innerHTML='<div class="dock-head"><button id="dock-prev" title="Previous">‹</button>'+
-    '<button id="dock-next" title="Next">›</button><span class="dh-title" id="dock-title"></span>'+
-    '<button id="dock-close" title="Close">✕</button></div><div id="dock-body"></div>';
-  document.body.appendChild(dk);
-  document.getElementById('dock-close').addEventListener('click',()=>undock());
-  document.getElementById('dock-prev').addEventListener('click',()=>cycleDock(-1));
-  document.getElementById('dock-next').addEventListener('click',()=>cycleDock(1));
+// --- floating "picture-in-picture" charts (wide screens only) ---
+// When the whole charts block scrolls out of view it pops into a fixed, draggable, resizable
+// overlay so the live charts stay on screen while you read the memo. It NEVER reflows the page
+// (it's an overlay), so the article keeps its full, readable width. Scroll back up and it
+// returns home automatically; the ✕ dismisses it until you scroll back to the charts.
+const MIN_FLOAT_W=1180;            // narrower than this, the charts just stay inline
+const FLOAT_AT=8, DOCK_BACK=140;   // hysteresis (px): float once the section is past the top edge
+let FLOATING=false, dismissed=false, dragging=false, pipGeom=null, _rt=null;
+const chartsEl=()=>document.getElementById('charts');
+const slotEl =()=>document.getElementById('charts-slot');
+
+function resizeCharts(){
+  clearTimeout(_rt); _rt=setTimeout(()=>{
+    ['gauge','cfiprice','ladder','heatmap'].forEach(id=>{ const el=document.getElementById(id);
+      if(el && el.classList.contains('js-plotly-plot') && el.offsetParent!==null) Plotly.Plots.resize(el); });
+  },70);
 }
-function dockFig(figId){
-  if(window.innerWidth<=1100)return;          // sticky dock is a wide-screen affordance
-  if(DOCKED===figId){ undock(); return; }     // toggle off if already docked
-  buildDock();
-  if(DOCKED) undock(true);                     // park the current one, keep the panel open
-  const fig=document.getElementById(figId); if(!fig)return;
-  const ph=document.createElement('div'); ph.id=figId+'-ph'; ph.style.display='none';
-  fig.parentNode.insertBefore(ph,fig);         // remember the home slot
-  document.getElementById('dock-body').appendChild(fig);
-  document.body.classList.add('docked'); DOCKED=figId;
-  setText('dock-title',figTitle(figId));
-  resizeFigCharts(fig);
+function defaultGeom(){
+  const w=Math.min(460,Math.round(window.innerWidth*0.42)), h=Math.min(470,Math.round(window.innerHeight*0.7));
+  return {left:window.innerWidth-w-18, top:74, width:w, height:h};
 }
-function undock(keepOpen){
-  if(!DOCKED)return;
-  const fig=document.getElementById(DOCKED), ph=document.getElementById(DOCKED+'-ph');
-  if(fig&&ph){ ph.parentNode.insertBefore(fig,ph); ph.remove(); }
-  DOCKED=null;
-  if(!keepOpen) document.body.classList.remove('docked');
-  resizeFigCharts(fig);
+function clampGeom(){ const c=chartsEl(); const w=c.offsetWidth||pipGeom.width, h=c.offsetHeight||pipGeom.height;
+  pipGeom.left=Math.max(4,Math.min(pipGeom.left, window.innerWidth-w-4));
+  pipGeom.top =Math.max(4,Math.min(pipGeom.top,  window.innerHeight-44)); }
+function applyGeom(){ const c=chartsEl();
+  c.style.left=pipGeom.left+'px'; c.style.top=pipGeom.top+'px';
+  c.style.width=pipGeom.width+'px'; c.style.height=pipGeom.height+'px'; }
+
+function setFloat(on){
+  if(on===FLOATING)return;
+  const c=chartsEl(), slot=slotEl(); if(!c||!slot)return;
+  if(on){
+    slot.style.height=c.offsetHeight+'px';   // reserve the in-flow space so nothing jumps
+    if(!pipGeom) pipGeom=defaultGeom();
+    c.classList.add('floating'); clampGeom(); applyGeom();
+    document.body.classList.add('has-pip'); FLOATING=true;
+  } else {
+    c.classList.remove('floating'); document.body.classList.remove('has-pip');
+    c.style.left=c.style.top=c.style.width=c.style.height='';
+    slot.style.height=''; FLOATING=false;
+  }
+  resizeCharts();
 }
-function cycleDock(dir){
-  if(!DOCKED)return;
-  const i=DOCKABLE.indexOf(DOCKED);
-  dockFig(DOCKABLE[(i+dir+DOCKABLE.length)%DOCKABLE.length]);
+function closePip(){ setFloat(false); dismissed=true; }   // ✕: dismiss until re-armed by scrolling back
+
+function onScroll(){
+  const slot=slotEl(); if(!slot)return;
+  if(window.innerWidth<MIN_FLOAT_W){ if(FLOATING) setFloat(false); return; }
+  const b=slot.getBoundingClientRect().bottom;
+  if(FLOATING){
+    if(b>DOCK_BACK){ setFloat(false); dismissed=false; }   // section back in view -> home + re-arm
+  } else {
+    if(b>DOCK_BACK) dismissed=false;                        // re-arm while the section is on screen
+    if(b<FLOAT_AT && !dismissed) setFloat(true);            // lost the charts -> float
+  }
+}
+
+function initPip(){
+  const c=chartsEl(), bar=document.getElementById('pip-bar'), close=document.getElementById('pip-close');
+  if(!c||!bar)return;
+  if(close) close.addEventListener('click',e=>{ e.stopPropagation(); closePip(); });
+  // drag by the title bar (resize is the native bottom-right handle via CSS resize:both)
+  bar.addEventListener('pointerdown',e=>{
+    if(e.target.closest('#pip-close'))return;
+    dragging=true; try{bar.setPointerCapture(e.pointerId);}catch(_){}
+    const sx=e.clientX, sy=e.clientY, bl=pipGeom.left, bt=pipGeom.top;
+    const move=ev=>{ if(!dragging)return;
+      pipGeom.left=bl+(ev.clientX-sx); pipGeom.top=bt+(ev.clientY-sy); clampGeom();
+      c.style.left=pipGeom.left+'px'; c.style.top=pipGeom.top+'px'; };
+    const up=ev=>{ dragging=false; try{bar.releasePointerCapture(ev.pointerId);}catch(_){}
+      bar.removeEventListener('pointermove',move); bar.removeEventListener('pointerup',up); };
+    bar.addEventListener('pointermove',move); bar.addEventListener('pointerup',up); e.preventDefault();
+  });
+  if(window.ResizeObserver){
+    new ResizeObserver(()=>{ if(!FLOATING)return;
+      pipGeom.width=c.offsetWidth; pipGeom.height=c.offsetHeight; resizeCharts(); }).observe(c);
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',()=>{ if(!FLOATING)return;
+    if(window.innerWidth<MIN_FLOAT_W){ setFloat(false); return; } clampGeom(); applyGeom(); resizeCharts(); });
+  onScroll();
 }
 
 // Fetch the latest data.json; if it's a newer snapshot, re-render in place + flash.
@@ -634,9 +680,9 @@ document.querySelectorAll('#primary-tabs button').forEach(b=>b.addEventListener(
 document.querySelectorAll('#ladder-mode button').forEach(b=>b.addEventListener('click',()=>setLadderMode(b.dataset.m)));
 document.querySelectorAll('#heatmap-res button').forEach(b=>b.addEventListener('click',()=>setHeatRes(b.dataset.r)));
 document.querySelectorAll('.expand-btn').forEach(b=>b.addEventListener('click',()=>toggleExpand(b.dataset.fig)));
-document.querySelectorAll('.dock-btn').forEach(b=>b.addEventListener('click',()=>dockFig(b.dataset.fig)));
 const _ub=document.getElementById('update-btn'); if(_ub) _ub.addEventListener('click',manualUpdate);
 renderAll(window.__DATA__);
+initPip();
 setInterval(poll,60000);
 setInterval(setFresh,20000);
 """
@@ -670,6 +716,9 @@ def _hero(snapshot: dict[str, Any]) -> str:
 
 def _charts() -> str:
     return """
+<div id="charts-slot">
+<div id="charts">
+<div id="pip-bar"><span class="pip-grip"><span class="dots">⠿</span> Live charts · drag to move · resize from the corner</span><button id="pip-close" title="Return charts to the page">✕</button></div>
 <div class="seg reveal" id="primary-tabs" style="animation-delay:.12s">
   <button class="active" data-v="live">Liquidation map</button>
   <button data-v="heatmap">History heatmap</button>
@@ -683,7 +732,6 @@ def _charts() -> str:
           <button class="active" data-m="density">density</button>
           <button data-m="bars">bars</button>
         </div>
-        <button class="dock-btn" data-fig="fig-map" title="Dock to side">⇥</button>
         <button class="expand-btn" data-fig="fig-map" title="Expand">⤢</button>
       </div>
     </div>
@@ -706,7 +754,6 @@ def _charts() -> str:
           <button class="active" data-r="hour">hourly</button>
           <button data-r="day">daily</button>
         </div>
-        <button class="dock-btn" data-fig="fig-map" title="Dock to side">⇥</button>
         <button class="expand-btn" data-fig="fig-map" title="Expand">⤢</button>
       </div>
     </div>
@@ -719,10 +766,7 @@ def _charts() -> str:
 <figure class="chart reveal" id="fig-frag" style="animation-delay:.18s">
   <div class="fig-top">
     <figcaption><span>Fig.02 — Fragility: now &amp; over time</span></figcaption>
-    <div class="fig-ctl">
-      <button class="dock-btn" data-fig="fig-frag" title="Dock to side">⇥</button>
-      <button class="expand-btn" data-fig="fig-frag" title="Expand">⤢</button>
-    </div>
+    <button class="expand-btn" data-fig="fig-frag" title="Expand">⤢</button>
   </div>
   <p class="explain"><b>Left:</b> the current Cascade Fragility Index as a 0–100 “fear gauge” (green calm,
      amber building, red fragile). <b>Right (top):</b> the index (gold) against <b>BTC price</b> (white) over time,
@@ -734,6 +778,8 @@ def _charts() -> str:
     <div id="cfiprice"></div>
   </div>
 </figure>
+</div><!-- /#charts -->
+</div><!-- /#charts-slot -->
 """
 
 
