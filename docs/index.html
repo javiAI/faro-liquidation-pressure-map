@@ -68,11 +68,12 @@
     border:1px solid var(--hair-strong); background:var(--ink-2); color:var(--muted); font-family:var(--mono);
     text-align:center; cursor:pointer; padding:0; }
   .tag .info:hover, .tag .info.on { color:#1a1206; background:var(--gold); border-color:var(--gold); }
-  #cardtip { position:absolute; z-index:3000; max-width:280px; background:var(--card-2);
+  #cardtip { position:absolute; z-index:3000; max-width:300px; max-height:58vh; overflow-y:auto; background:var(--card-2);
     border:1px solid var(--hair-strong); border-left:2px solid var(--gold); border-radius:11px;
     padding:12px 14px; font-family:var(--body); font-size:12.8px; line-height:1.55; color:#dccfba;
     box-shadow:0 14px 38px rgba(0,0,0,0.55); opacity:0; transform:translateY(-4px); pointer-events:none;
     transition:opacity .15s ease, transform .15s ease; }
+  #cardtip b { color:#cabfae; font-weight:600; }
   #cardtip.show { opacity:1; transform:none; }
   /* expand-to-fullscreen button + state */
   .expand-btn { font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
@@ -88,9 +89,10 @@
   figure.chart.expanded #ladder, figure.chart.expanded #heatmap,
   figure.chart.expanded .row-body { flex:1 1 auto !important; min-height:0; height:auto !important; }
   figure.chart.expanded #gauge, figure.chart.expanded #cfiprice { height:auto !important; min-height:0; }
-  /* in fullscreen keep the explainer visible and readable; the chart fills the remaining height */
-  figure.chart.expanded .explain { max-width:none; padding:8px 14px 10px; font-size:14px; }
-  figure.chart.expanded .legend { padding:2px 14px 8px; }
+  /* in fullscreen keep the explainer visible and readable; the chart fills the remaining height
+     (display:block !important overrides the floating-panel collapse when expanding from the PiP) */
+  figure.chart.expanded .explain { display:block !important; max-width:none; padding:8px 14px 10px; font-size:14px; }
+  figure.chart.expanded .legend { display:flex !important; padding:2px 14px 8px; }
   body.has-expanded { overflow:hidden; }
   /* floating "picture-in-picture" charts: when the charts scroll out of view they pop into a
      draggable / resizable overlay on the right. It's an OVERLAY (position:fixed) — it never
@@ -156,17 +158,29 @@
   figcaption b { color:var(--muted); font-weight:500; }
   .explain { font-size:13px; line-height:1.55; color:var(--muted); padding:6px 10px 2px; max-width:78ch; margin:0; }
   .explain b { color:#cabfae; font-weight:500; }
+  /* "?" that reveals a figure's explainer (used only in the floating panel, like the KPI cards) */
+  .explain-info { display:none; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%;
+    border:1px solid var(--hair-strong); background:var(--ink-2); color:var(--muted); font-family:var(--mono);
+    font-size:10px; line-height:1; cursor:pointer; padding:0; flex:0 0 auto; }
+  .explain-info:hover, .explain-info.on { color:#1a1206; background:var(--gold); border-color:var(--gold); }
+  /* in the sticky panel each figure's text is collapsed by default; the "?" shows it on click */
+  #charts.floating .explain, #charts.floating .legend { display:none; }
+  #charts.floating .explain-info { display:inline-flex; }
+  figure.chart.expanded .explain-info { display:none !important; }
   .legend { display:flex; gap:18px; padding:6px 10px 0; flex-wrap:wrap; }
   .lg { font-family:var(--mono); font-size:11.5px; color:var(--muted); display:inline-flex; align-items:center; gap:7px; }
   .lg i { width:18px; height:3px; border-radius:2px; display:inline-block; }
   #ladder,#heatmap { height:540px; } #cfiprice,#gauge { height:350px; }
   .empty { color:var(--muted); font-family:var(--mono); font-size:13px; text-align:center; padding:120px 20px; }
   .modebar { background:transparent !important; }
-  section.memo { margin-top:46px; }
+  /* the whole memo column is one uniform measure (left-aligned), so tables/callouts/headers
+     no longer run wider than the prose — and the freed right-hand space is given to the
+     sticky charts panel (its default width starts just right of this column). */
+  section.memo { margin-top:46px; max-width:624px; }
   .sec-head { display:flex; align-items:baseline; gap:16px; border-bottom:1px solid var(--hair); padding-bottom:12px; margin:0 0 18px; }
   .sec-num { font-family:var(--serif); font-size:30px; color:var(--gold); font-weight:600; line-height:1; font-variant-numeric:tabular-nums; }
   .sec-head h2 { font-family:var(--serif); font-weight:600; font-size:25px; letter-spacing:-.01em; margin:0; }
-  .memo p, .memo li { font-size:15.5px; color:#cdc3b3; max-width:70ch; }
+  .memo p, .memo li { font-size:15.5px; color:#cdc3b3; max-width:none; }
   .memo h3 { font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); margin:22px 0 4px; }
   .memo strong { color:var(--bone); font-weight:600; } .memo em { color:#dcd2c2; }
   ul { padding-left:20px; } li { margin:5px 0; }
@@ -174,7 +188,7 @@
   .callout { border-left:2px solid var(--gold); background:linear-gradient(90deg,rgba(232,161,58,0.07),transparent); padding:13px 18px; margin:16px 0; border-radius:0 10px 10px 0; }
   .callout.warn { border-left-color:var(--short); background:linear-gradient(90deg,rgba(229,86,78,0.08),transparent); }
   .callout p { margin:0; max-width:none; }
-  .lead { font-size:16.5px; line-height:1.6; color:#d6cbb9; max-width:74ch; margin:0 0 6px; }
+  .lead { font-size:16.5px; line-height:1.6; color:#d6cbb9; max-width:none; margin:0 0 6px; }
   .callout.reading { border-left-color:var(--long); background:linear-gradient(90deg,rgba(63,185,140,0.08),transparent); }
   .reading-tag { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--long); margin-bottom:6px; }
   #reading-line { font-size:14.5px; color:#ded2bf; }
@@ -227,6 +241,7 @@
           <button class="active" data-m="density">density</button>
           <button data-m="bars">bars</button>
         </div>
+        <button class="info explain-info" title="What this shows">?</button>
         <button class="expand-btn" data-fig="fig-map" title="Expand">⤢</button>
       </div>
     </div>
@@ -249,6 +264,7 @@
           <button class="active" data-r="hour">hourly</button>
           <button data-r="day">daily</button>
         </div>
+        <button class="info explain-info" title="What this shows">?</button>
         <button class="expand-btn" data-fig="fig-map" title="Expand">⤢</button>
       </div>
     </div>
@@ -261,7 +277,10 @@
 <figure class="chart reveal" id="fig-frag" style="animation-delay:.18s">
   <div class="fig-top">
     <figcaption><span>Fig.02 — Fragility: now &amp; over time</span></figcaption>
-    <button class="expand-btn" data-fig="fig-frag" title="Expand">⤢</button>
+    <div class="fig-ctl">
+      <button class="info explain-info" title="What this shows">?</button>
+      <button class="expand-btn" data-fig="fig-frag" title="Expand">⤢</button>
+    </div>
   </div>
   <p class="explain"><b>Left:</b> the current Cascade Fragility Index as a 0–100 “fear gauge” — green calm, amber building, red fragile.<br>
      <b>Right (top):</b> that index (gold) against <b>BTC price</b> (white) over time, with regime bands — watch fragility build or bleed off as price moves.<br>
@@ -747,12 +766,18 @@ document.addEventListener('click',function(e){
   const b=e.target.closest('.info');
   if(b){ e.stopPropagation();
     if(tipEl.classList.contains('show') && tipEl._owner===b){ hideTip(); return; }
-    hideTip(); tipEl.textContent=b.getAttribute('data-tip'); tipEl._owner=b; b.classList.add('on');
-    tipEl.classList.add('show');
-    const r=b.getBoundingClientRect(), w=tipEl.offsetWidth;
+    hideTip();
+    if(b.classList.contains('explain-info')){            // figure "?" -> show that figure's explainer (HTML)
+      const cont=b.closest('.fig-top').parentElement, ex=cont&&cont.querySelector('.explain');
+      tipEl.innerHTML = ex ? ex.innerHTML : '';
+    } else { tipEl.textContent=b.getAttribute('data-tip'); }
+    tipEl._owner=b; b.classList.add('on'); tipEl.classList.add('show');
+    const r=b.getBoundingClientRect(), w=tipEl.offsetWidth, h=tipEl.offsetHeight;
     let left=r.left+window.scrollX+r.width/2-w/2;
     left=Math.max(10,Math.min(left,window.innerWidth-w-12));
-    tipEl.style.left=left+'px'; tipEl.style.top=(r.bottom+window.scrollY+9)+'px';
+    let top=r.bottom+window.scrollY+9;
+    if(r.bottom+h+16>window.innerHeight && r.top-h-9>0) top=r.top+window.scrollY-h-9;  // flip above if no room below
+    tipEl.style.left=left+'px'; tipEl.style.top=top+'px';
   } else if(!e.target.closest('#cardtip')){ hideTip(); }
 });
 
@@ -802,11 +827,12 @@ function resizeCharts(){
 function defaultGeom(){
   const EDGE=16, TOP=70, BOT=18, GAP=18;
   const vw=window.innerWidth, vh=window.innerHeight;
-  const wrap=document.querySelector('.wrap');
-  const wr=wrap?wrap.getBoundingClientRect().right:vw;
-  let left=Math.round(wr+GAP), width=Math.round(vw-EDGE-left);   // fill the gutter, no overlap
-  if(width<PIP_MINW){ width=PIP_MINW; left=Math.max(EDGE, vw-EDGE-width); }  // narrow gutter: stay usable
-  width=Math.min(width, Math.round(vw*0.7));
+  // start just right of the (now narrow, uniform) memo column — that freed space is the panel's
+  const memo=document.querySelector('section.memo'), wrap=document.querySelector('.wrap');
+  const ref=memo?memo.getBoundingClientRect().right:(wrap?wrap.getBoundingClientRect().right:vw);
+  let left=Math.round(ref+GAP), width=Math.round(vw-EDGE-left);
+  if(width<PIP_MINW){ width=PIP_MINW; left=Math.max(EDGE, vw-EDGE-width); }  // narrow gap: stay usable
+  width=Math.min(width, Math.round(vw*0.74));
   return {left, top:TOP, width, height:Math.round(vh-TOP-BOT)};
 }
 function clampGeom(){ const w=Math.max(pipGeom.width||0, PIP_MINW);   // use the intended width, not a stale offsetWidth
