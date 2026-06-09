@@ -94,25 +94,39 @@
      draggable / resizable overlay on the right. It's an OVERLAY (position:fixed) — it never
      reflows the page, so the article keeps its full, readable width. Wide screens only. */
   #pip-bar { display:none; }
-  #charts.floating { position:fixed; z-index:1800; margin:0; overflow:auto; resize:both;
-    width:460px; height:460px; min-width:340px; min-height:260px; max-width:92vw; max-height:90vh;
-    padding:0 11px 12px; border:1px solid var(--hair-strong); border-radius:15px;
-    background:linear-gradient(180deg,var(--card),var(--ink-2)); box-shadow:0 30px 84px rgba(0,0,0,0.66);
-    overscroll-behavior:contain; }
-  #charts.floating #pip-bar { display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:6;
-    margin:0 -11px 4px; padding:9px 12px; cursor:move; user-select:none; touch-action:none;
+  .pip-rz { display:none; }
+  #charts.floating { position:fixed; z-index:1800; margin:0; overflow:visible;
+    min-width:320px; min-height:220px; max-width:96vw; max-height:96vh;
+    display:flex; flex-direction:column; border:1px solid var(--hair-strong); border-radius:15px;
+    background:linear-gradient(180deg,var(--card),var(--ink-2)); box-shadow:0 30px 84px rgba(0,0,0,0.66); }
+  #charts.floating #pip-bar { display:flex; align-items:center; gap:10px; flex:0 0 auto; z-index:6;
+    padding:9px 12px; cursor:move; user-select:none; touch-action:none; border-radius:14px 14px 0 0;
     background:var(--card-2); border-bottom:1px solid var(--hair); }
   #pip-bar .pip-grip { flex:1; font-family:var(--mono); font-size:10.5px; letter-spacing:.14em;
-    text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; }
-  #pip-bar .pip-grip .dots { color:var(--faint); letter-spacing:.05em; }
-  #pip-close { font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
+    text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; min-width:0; }
+  #pip-bar .pip-grip .gtxt { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #pip-bar .pip-grip .dots { color:var(--faint); letter-spacing:.05em; flex:0 0 auto; }
+  #pip-close { flex:0 0 auto; font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
     border:1px solid var(--hair); border-radius:7px; width:28px; height:26px; cursor:pointer; transition:all .18s ease; }
   #pip-close:hover { color:var(--gold); border-color:var(--gold); }
-  /* compact the charts so both figures read well inside the smaller floating window */
+  /* inner scroll area (only the content scrolls; the frame + handles stay put) */
+  #charts.floating #pip-scroll { flex:1 1 auto; min-height:0; overflow:auto; padding:0 11px 12px;
+    overscroll-behavior:contain; }
+  /* resize grips on every edge and corner */
+  #charts.floating .pip-rz { display:block; position:absolute; z-index:7; }
+  #charts.floating .pip-rz.n { top:-3px; left:12px; right:12px; height:9px; cursor:ns-resize; }
+  #charts.floating .pip-rz.s { bottom:-3px; left:12px; right:12px; height:9px; cursor:ns-resize; }
+  #charts.floating .pip-rz.e { right:-3px; top:12px; bottom:12px; width:9px; cursor:ew-resize; }
+  #charts.floating .pip-rz.w { left:-3px; top:12px; bottom:12px; width:9px; cursor:ew-resize; }
+  #charts.floating .pip-rz.ne { top:-4px; right:-4px; width:16px; height:16px; cursor:nesw-resize; z-index:8; }
+  #charts.floating .pip-rz.nw { top:-4px; left:-4px; width:16px; height:16px; cursor:nwse-resize; z-index:8; }
+  #charts.floating .pip-rz.se { bottom:-4px; right:-4px; width:16px; height:16px; cursor:nwse-resize; z-index:8; }
+  #charts.floating .pip-rz.sw { bottom:-4px; left:-4px; width:16px; height:16px; cursor:nesw-resize; z-index:8; }
+  /* compact the charts so both figures read well inside the floating window */
   #charts.floating .seg { margin-top:6px; }
   #charts.floating figure.chart { margin:10px 0 12px; }
   #charts.floating #ladder, #charts.floating #heatmap { height:300px; }
-  #charts.floating #cfiprice, #charts.floating #gauge { height:230px; }
+  #charts.floating #cfiprice, #charts.floating #gauge { height:215px; }
   #charts.floating .row-body { grid-template-columns:1fr; }
   #charts.floating .reveal { opacity:1; animation:none; }
   .fig-ctl { display:flex; align-items:center; gap:10px; }
@@ -195,7 +209,8 @@
 <div id="kpis" class="kpis reveal" style="animation-delay:.10s"><div class="kpi"><span class="kpi-bar" style="background:var(--long)"></span><div class="kpi-label">Cascade Fragility Index</div><div class="kpi-value">15.4<span class='u'>/100</span></div><div class="kpi-sub">regime · CALM</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--long)"></span><div class="kpi-label">Long / short asymmetry</div><div class="kpi-value">-0.06</div><div class="kpi-sub">longs more exposed · flush-down fuel</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--hair-strong)"></span><div class="kpi-label">Liquidable within ±5%</div><div class="kpi-value">$77.86M</div><div class="kpi-sub">±2% · $26.93M</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--hair-strong)"></span><div class="kpi-label">BTC mark</div><div class="kpi-value">$61,344</div><div class="kpi-sub">oracle $61,378</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--hair-strong)"></span><div class="kpi-label">Open interest</div><div class="kpi-value">$1.99B</div><div class="kpi-sub">32,394 BTC</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--hair-strong)"></span><div class="kpi-label">Funding (annualized)</div><div class="kpi-value">+11.0%</div><div class="kpi-sub">+0.0013% / h</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--hair-strong)"></span><div class="kpi-label">OI captured</div><div class="kpi-value">48%</div><div class="kpi-sub">$949.79M of $1.99B OI</div></div><div class="kpi"><span class="kpi-bar" style="background:var(--long)"></span><div class="kpi-label">Signal confidence</div><div class="kpi-value">High</div><div class="kpi-sub">48% coverage · 271 positions</div></div></div>
 <div id="charts-slot">
 <div id="charts">
-<div id="pip-bar"><span class="pip-grip"><span class="dots">⠿</span> Live charts · drag to move · resize from the corner</span><button id="pip-close" title="Return charts to the page">✕</button></div>
+<div id="pip-bar"><span class="pip-grip"><span class="dots">⠿</span><span class="gtxt">Live charts · drag to move · resize from any edge</span></span><button id="pip-close" title="Return charts to the page">✕</button></div>
+<div id="pip-scroll">
 <div class="seg reveal" id="primary-tabs" style="animation-delay:.12s">
   <button class="active" data-v="live">Liquidation map</button>
   <button data-v="heatmap">History heatmap</button>
@@ -212,10 +227,10 @@
         <button class="expand-btn" data-fig="fig-map" title="Expand">⤢</button>
       </div>
     </div>
-    <p class="explain">Where the open BTC leverage we track would be <b>force-liquidated</b>, by price.
-       <b>Teal = longs</b> (liquidate below price — a downside flush); <b>red = shorts</b> (liquidate
-       above — a squeeze up). Gold line = current mark. <b>density</b> is a smoothed profile (area ∝ notional);
-       <b>bars</b> shows the exact per-level notional. Hover for the amount; drag/scroll to zoom, ⤢ to expand.</p>
+    <p class="explain">Where the open BTC leverage we track would be <b>force-liquidated</b>, by price.<br>
+       <b>Teal = longs</b> (liquidate below price — a downside flush); <b>red = shorts</b> (liquidate above — a squeeze up). Gold line = current mark.<br>
+       <b>density</b> is a smoothed profile (area ∝ notional); <b>bars</b> shows the exact per-level notional.<br>
+       Hover for the amount; drag/scroll to zoom, ⤢ to expand.</p>
     <div class="legend">
       <span class="lg"><i style="background:var(--long)"></i>Long · flush risk (below mark)</span>
       <span class="lg"><i style="background:var(--short)"></i>Short · squeeze risk (above mark)</span>
@@ -234,8 +249,8 @@
         <button class="expand-btn" data-fig="fig-map" title="Expand">⤢</button>
       </div>
     </div>
-    <p class="explain">The same liquidation field <b>over time</b>: rows are price levels, columns are time,
-       brighter = more liquidable notional parked there. The <b>white line is the mark-price path</b>.
+    <p class="explain">The same liquidation field <b>over time</b>: rows are price levels, columns are time, brighter = more liquidable notional parked there.<br>
+       The <b>white line is the mark-price path</b>.<br>
        Pick a resolution — 10-minute snapshots, hourly, or daily averages.</p>
     <div id="heatmap"></div>
   </div>
@@ -245,16 +260,19 @@
     <figcaption><span>Fig.02 — Fragility: now &amp; over time</span></figcaption>
     <button class="expand-btn" data-fig="fig-frag" title="Expand">⤢</button>
   </div>
-  <p class="explain"><b>Left:</b> the current Cascade Fragility Index as a 0–100 “fear gauge” (green calm,
-     amber building, red fragile). <b>Right (top):</b> the index (gold) against <b>BTC price</b> (white) over time,
-     with regime bands. <b>Right (strip below):</b> long/short <b>asymmetry</b> on the same timeline —
-     <b>red above 0</b> = short-side fuel (squeeze-up risk), <b>teal below 0</b> = long-side fuel (flush-down risk).
-     Watch fragility build or bleed off as price moves.</p>
+  <p class="explain"><b>Left:</b> the current Cascade Fragility Index as a 0–100 “fear gauge” — green calm, amber building, red fragile.<br>
+     <b>Right (top):</b> that index (gold) against <b>BTC price</b> (white) over time, with regime bands — watch fragility build or bleed off as price moves.<br>
+     <b>Right (strip below):</b> the long/short <b>asymmetry</b> on the same timeline. It is <b>not</b> a “go long / go short” signal — it shows <b>which side of the book holds more liquidation fuel just past the current price</b>:<br>
+     · <b>above 0 (red, “short-side”)</b> — more <b>short</b> positions would be force-liquidated just <b>above</b> price; their forced buying can <b>squeeze price up</b>.<br>
+     · <b>below 0 (teal, “long-side”)</b> — more <b>long</b> positions would be force-liquidated just <b>below</b> price; their forced selling can <b>flush price down</b>.<br>
+     Near 0 means the two sides are roughly balanced.</p>
   <div class="row-body">
     <div id="gauge"></div>
     <div id="cfiprice"></div>
   </div>
 </figure>
+</div><!-- /#pip-scroll -->
+<i class="pip-rz n" data-rz="n"></i><i class="pip-rz s" data-rz="s"></i><i class="pip-rz e" data-rz="e"></i><i class="pip-rz w" data-rz="w"></i><i class="pip-rz ne" data-rz="ne"></i><i class="pip-rz nw" data-rz="nw"></i><i class="pip-rz se" data-rz="se"></i><i class="pip-rz sw" data-rz="sw"></i>
 </div><!-- /#charts -->
 </div><!-- /#charts-slot -->
 
@@ -613,8 +631,8 @@ function renderCfiPrice(d){
     title:{text:'BTC price',font:{color:'#cdbfa8',size:11}},tickfont:{color:'#cdbfa8',size:11}};
   // bottom panel (domain 0–0.22): asymmetry in [-1,1], baseline at 0
   lay.yaxis3={domain:[0,0.22],range:[-1,1],anchor:'x2',zeroline:true,zerolinewidth:1,zerolinecolor:'rgba(202,191,174,0.45)',
-    gridcolor:GRID,tickvals:[-1,0,1],ticktext:['long','0','short'],tickfont:{color:MUTED,size:9},
-    title:{text:'asym',font:{color:MUTED,size:9.5}}};
+    gridcolor:GRID,tickvals:[-1,0,1],ticktext:['long-side','0','short-side'],tickfont:{color:MUTED,size:9},
+    title:{text:'which side<br>is exposed',font:{color:MUTED,size:9}}};
   lay.shapes=[{type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:0,y1:POLICY.calm,fillcolor:LONG,opacity:0.06,line:{width:0}},
               {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:POLICY.calm,y1:POLICY.elev,fillcolor:GOLD,opacity:0.06,line:{width:0}},
               {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:POLICY.elev,y1:100,fillcolor:SHORT,opacity:0.06,line:{width:0}}];
@@ -628,7 +646,8 @@ function renderCfiPrice(d){
     {x:x,y:aNeg,xaxis:'x2',yaxis:'y3',type:'scatter',mode:'lines',fill:'tozeroy',fillcolor:'rgba(63,185,140,0.25)',
      line:{width:0},hoverinfo:'skip',showlegend:false},
     {x:x,y:asym,name:'asymmetry',xaxis:'x2',yaxis:'y3',type:'scatter',mode:'lines',connectgaps:false,
-     line:{color:'#cabfae',width:1.3},hovertemplate:'asym %{y:+.2f}<extra></extra>'}];
+     line:{color:'#cabfae',width:1.3},hovertemplate:'asymmetry %{y:+.2f} · %{customdata}<extra></extra>',
+     customdata:asym.map(v=>v==null?'':(v>0.02?'short-side (squeeze-up fuel)':v<-0.02?'long-side (flush-down fuel)':'balanced'))}];
   Plotly.react('cfiprice',traces,lay,CFG);
 }
 
@@ -750,7 +769,8 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape')
 // returns home automatically; the ✕ dismisses it until you scroll back to the charts.
 const MIN_FLOAT_W=1180;            // narrower than this, the charts just stay inline
 const FLOAT_AT=8, DOCK_BACK=140;   // hysteresis (px): float once the section is past the top edge
-let FLOATING=false, dismissed=false, dragging=false, pipGeom=null, _rt=null;
+const PIP_MINW=320, PIP_MINH=220;  // resize limits (kept in sync with the CSS min-*)
+let FLOATING=false, dismissed=false, dragging=false, userMoved=false, pipGeom=null, _rt=null;
 const chartsEl=()=>document.getElementById('charts');
 const slotEl =()=>document.getElementById('charts-slot');
 
@@ -760,11 +780,19 @@ function resizeCharts(){
       if(el && el.classList.contains('js-plotly-plot') && el.offsetParent!==null) Plotly.Plots.resize(el); });
   },70);
 }
+// Default: fill the available height, and as wide as the right gutter allows (no overlap with the
+// article). Only when the gutter is too small does it fall back to a usable width flush to the edge.
 function defaultGeom(){
-  const w=Math.min(460,Math.round(window.innerWidth*0.42)), h=Math.min(470,Math.round(window.innerHeight*0.7));
-  return {left:window.innerWidth-w-18, top:74, width:w, height:h};
+  const EDGE=16, TOP=70, BOT=18, GAP=18;
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const wrap=document.querySelector('.wrap');
+  const wr=wrap?wrap.getBoundingClientRect().right:vw;
+  let left=Math.round(wr+GAP), width=Math.round(vw-EDGE-left);   // fill the gutter, no overlap
+  if(width<PIP_MINW){ width=PIP_MINW; left=Math.max(EDGE, vw-EDGE-width); }  // narrow gutter: stay usable
+  width=Math.min(width, Math.round(vw*0.7));
+  return {left, top:TOP, width, height:Math.round(vh-TOP-BOT)};
 }
-function clampGeom(){ const c=chartsEl(); const w=c.offsetWidth||pipGeom.width, h=c.offsetHeight||pipGeom.height;
+function clampGeom(){ const w=Math.max(pipGeom.width||0, PIP_MINW);   // use the intended width, not a stale offsetWidth
   pipGeom.left=Math.max(4,Math.min(pipGeom.left, window.innerWidth-w-4));
   pipGeom.top =Math.max(4,Math.min(pipGeom.top,  window.innerHeight-44)); }
 function applyGeom(){ const c=chartsEl();
@@ -776,7 +804,7 @@ function setFloat(on){
   const c=chartsEl(), slot=slotEl(); if(!c||!slot)return;
   if(on){
     slot.style.height=c.offsetHeight+'px';   // reserve the in-flow space so nothing jumps
-    if(!pipGeom) pipGeom=defaultGeom();
+    if(!pipGeom || !userMoved) pipGeom=defaultGeom();   // adapt to the viewport until the user customises
     c.classList.add('floating'); clampGeom(); applyGeom();
     document.body.classList.add('has-pip'); FLOATING=true;
   } else {
@@ -800,14 +828,40 @@ function onScroll(){
   }
 }
 
+function startResize(dir, e){
+  e.preventDefault(); e.stopPropagation();
+  const c=chartsEl(), r=c.getBoundingClientRect();
+  const sx=e.clientX, sy=e.clientY, o={left:r.left, top:r.top, width:r.width, height:r.height};
+  const maxW=Math.round(window.innerWidth*0.96), maxH=Math.round(window.innerHeight*0.96);
+  const tgt=e.currentTarget; userMoved=true;
+  try{tgt.setPointerCapture(e.pointerId);}catch(_){}
+  const move=ev=>{
+    let dx=ev.clientX-sx, dy=ev.clientY-sy, L=o.left, T=o.top, W=o.width, H=o.height;
+    if(dir.includes('e')) W=o.width+dx;
+    if(dir.includes('s')) H=o.height+dy;
+    if(dir.includes('w')){ W=o.width-dx; L=o.left+dx; }
+    if(dir.includes('n')){ H=o.height-dy; T=o.top+dy; }
+    if(W<PIP_MINW){ if(dir.includes('w')) L-=(PIP_MINW-W); W=PIP_MINW; }
+    if(W>maxW){ if(dir.includes('w')) L+=(W-maxW); W=maxW; }
+    if(H<PIP_MINH){ if(dir.includes('n')) T-=(PIP_MINH-H); H=PIP_MINH; }
+    if(H>maxH){ if(dir.includes('n')) T+=(H-maxH); H=maxH; }
+    L=Math.max(4,Math.min(L, window.innerWidth-W-4)); T=Math.max(4,Math.min(T, window.innerHeight-44));
+    pipGeom={left:Math.round(L), top:Math.round(T), width:Math.round(W), height:Math.round(H)};
+    applyGeom(); resizeCharts();
+  };
+  const up=ev=>{ try{tgt.releasePointerCapture(ev.pointerId);}catch(_){}
+    tgt.removeEventListener('pointermove',move); tgt.removeEventListener('pointerup',up); resizeCharts(); };
+  tgt.addEventListener('pointermove',move); tgt.addEventListener('pointerup',up);
+}
+
 function initPip(){
   const c=chartsEl(), bar=document.getElementById('pip-bar'), close=document.getElementById('pip-close');
   if(!c||!bar)return;
   if(close) close.addEventListener('click',e=>{ e.stopPropagation(); closePip(); });
-  // drag by the title bar (resize is the native bottom-right handle via CSS resize:both)
+  // drag by the title bar
   bar.addEventListener('pointerdown',e=>{
     if(e.target.closest('#pip-close'))return;
-    dragging=true; try{bar.setPointerCapture(e.pointerId);}catch(_){}
+    dragging=true; userMoved=true; try{bar.setPointerCapture(e.pointerId);}catch(_){}
     const sx=e.clientX, sy=e.clientY, bl=pipGeom.left, bt=pipGeom.top;
     const move=ev=>{ if(!dragging)return;
       pipGeom.left=bl+(ev.clientX-sx); pipGeom.top=bt+(ev.clientY-sy); clampGeom();
@@ -816,13 +870,17 @@ function initPip(){
       bar.removeEventListener('pointermove',move); bar.removeEventListener('pointerup',up); };
     bar.addEventListener('pointermove',move); bar.addEventListener('pointerup',up); e.preventDefault();
   });
+  // resize from every edge / corner
+  c.querySelectorAll('.pip-rz').forEach(h=>h.addEventListener('pointerdown',e=>startResize(h.dataset.rz,e)));
   if(window.ResizeObserver){
     new ResizeObserver(()=>{ if(!FLOATING)return;
       pipGeom.width=c.offsetWidth; pipGeom.height=c.offsetHeight; resizeCharts(); }).observe(c);
   }
   window.addEventListener('scroll',onScroll,{passive:true});
   window.addEventListener('resize',()=>{ if(!FLOATING)return;
-    if(window.innerWidth<MIN_FLOAT_W){ setFloat(false); return; } clampGeom(); applyGeom(); resizeCharts(); });
+    if(window.innerWidth<MIN_FLOAT_W){ setFloat(false); return; }
+    if(!userMoved) pipGeom=defaultGeom();   // keep filling the available space until the user customises
+    clampGeom(); applyGeom(); resizeCharts(); });
   onScroll();
 }
 
