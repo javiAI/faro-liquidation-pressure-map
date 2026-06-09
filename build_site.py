@@ -314,6 +314,8 @@ _CSS = r"""
   .memo p, .memo li { font-size:15.5px; color:#cdc3b3; max-width:none; }
   .memo h3 { font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); margin:22px 0 4px; }
   .memo strong { color:var(--bone); font-weight:600; } .memo em { color:#dcd2c2; }
+  .memo a { color:var(--gold); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; transition:color .15s ease; }
+  .memo a:hover { color:#f3c171; }
   ul { padding-left:20px; } li { margin:5px 0; }
   code { font-family:var(--mono); background:var(--ink-2); border:1px solid var(--hair); padding:1px 6px; border-radius:5px; font-size:12.5px; color:#e9c98c; }
   .callout { border-left:2px solid var(--gold); background:linear-gradient(90deg,rgba(232,161,58,0.07),transparent); padding:13px 18px; margin:16px 0; border-radius:0 10px 10px 0; }
@@ -952,12 +954,22 @@ def _memo(snapshot: dict[str, Any]) -> str:
     return f"""
 <section class="memo reveal" style="animation-delay:.10s">
 
-<p class="lead">I spent time in Faro the way a BTC perp trader would — watching funding, open
-interest, the liquidation feed. Faro already shows <em>Liquidation Volume</em>: the liquidations
-that have <strong>already fired</strong>. What I kept reaching for and couldn't find was the other
-half of that picture — not what just got liquidated, but <strong>where the leverage that's still
-open would get liquidated next</strong>. That gap is the metric I built, and the live tool above is
-the working version of it.</p>
+<p class="lead">This is my entry for the Faro Head of Data challenge: use Faro as an active trader,
+find one piece of data that is genuinely missing — not a nice-to-have dashboard stat — and take it
+from idea to a working proof of concept. I started from a question I actually ask intraday and worked
+back to the data, rather than picking a convenient dataset and dressing it up as a signal.</p>
+
+<p>I also treated it as a product question, not only a deliverable. This page is a proposal for how a
+metric like this could live <em>inside</em> Faro — a focused detail view a trader opens from a signal
+to interrogate it properly (the price levels, the regime, how it has moved) instead of reading a
+single number off a dashboard. The same pattern would fit any Faro metric; this is just one worked
+example, running live on Hyperliquid BTC. The metric, the Airflow DAG and the full pipeline are in
+the repo: <a href="https://github.com/javiAI/faro-liquidation-pressure-map" target="_blank" rel="noopener">github.com/javiAI/faro-liquidation-pressure-map</a>.</p>
+
+<p>The gap itself: Faro already surfaces <em>Liquidation Volume</em>, the liquidations that have
+<strong>already fired</strong>. What I kept reaching for was the other half of that picture — not what
+just got liquidated, but <strong>where the leverage that is still open would get liquidated
+next</strong>. That blind spot is what this fills.</p>
 
 <div class="callout reading"><div class="reading-tag">▮ current reading · live</div>
 <p id="reading-line">{_reading(snapshot)}</p></div>
