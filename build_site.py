@@ -214,6 +214,8 @@ _CSS = r"""
   figure.chart.expanded #ladder, figure.chart.expanded #heatmap,
   figure.chart.expanded .row-body { flex:1 1 auto; min-height:0; height:auto; }
   figure.chart.expanded #gauge, figure.chart.expanded #cfiprice { height:auto; min-height:0; }
+  /* in fullscreen, hide the descriptive text/legend so the chart itself fills the height */
+  figure.chart.expanded .explain, figure.chart.expanded .legend { display:none; }
   body.has-expanded { overflow:hidden; }
   .fig-ctl { display:flex; align-items:center; gap:10px; }
   .row-body { display:grid; grid-template-columns:1fr 2fr; gap:13px; align-items:stretch; }
