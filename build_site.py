@@ -420,13 +420,19 @@ function renderLadder(d){
 
 function renderGauge(d){
   const cfi=d.signals.cfi;
-  const tr={type:'indicator',mode:'gauge+number',value:cfi,number:{font:{size:38,color:FONT,family:MONO},suffix:'/100'},
-    gauge:{axis:{range:[0,100],tickcolor:MUTED,tickfont:{color:MUTED,size:10}},bar:{color:FONT,thickness:0.22},
+  // Scale the big number / ticks / margins to the container so they never overflow the arc
+  // (the gauge gets small inside the floating panel and large when expanded).
+  const el=document.getElementById('gauge'); const w=(el&&el.clientWidth)?el.clientWidth:300;
+  const numSize=Math.max(15,Math.min(40,Math.round(w*0.135)));
+  const tickSize=Math.max(7,Math.min(10,Math.round(w*0.032)));
+  const mx=Math.max(14,Math.min(30,Math.round(w*0.09)));
+  const tr={type:'indicator',mode:'gauge+number',value:cfi,number:{font:{size:numSize,color:FONT,family:MONO},suffix:'/100'},
+    gauge:{axis:{range:[0,100],tickcolor:MUTED,tickfont:{color:MUTED,size:tickSize}},bar:{color:FONT,thickness:0.22},
       bgcolor:'rgba(0,0,0,0)',borderwidth:0,
       steps:[{range:[0,POLICY.calm],color:'rgba(63,185,140,0.30)'},{range:[POLICY.calm,POLICY.elev],color:'rgba(232,161,58,0.30)'},{range:[POLICY.elev,100],color:'rgba(229,86,78,0.32)'}],
       threshold:{line:{color:GOLD,width:4},value:cfi}}};
   Plotly.react('gauge',[tr],{paper_bgcolor:'rgba(0,0,0,0)',font:{color:FONT,family:MONO},autosize:true,
-    margin:{l:30,r:30,t:26,b:12},modebar:{bgcolor:'rgba(0,0,0,0)',color:MUTED,activecolor:GOLD}},CFG);
+    margin:{l:mx,r:mx,t:24,b:10},modebar:{bgcolor:'rgba(0,0,0,0)',color:MUTED,activecolor:GOLD}},CFG);
 }
 
 function renderCfiPrice(d){
@@ -439,30 +445,33 @@ function renderCfiPrice(d){
   const lay=baseLayout('');   // named by the figcaption + explanation above; keep the plot airy
   lay.margin={l:60,r:66,t:34,b:46}; lay.hovermode='x unified'; lay.showlegend=true;
   lay.legend={orientation:'h',y:1.16,x:0,bgcolor:'rgba(0,0,0,0)',font:{size:11.5,color:MUTED}};
-  // shared x: ticks only on the bottom axis (x2, anchored to the asymmetry panel)
-  lay.xaxis=Object.assign(lay.xaxis,{type:'date',anchor:'y',showticklabels:false,title:''});
-  lay.xaxis2={type:'date',anchor:'y3',matches:'x',gridcolor:GRID,zerolinecolor:GRID,linecolor:GRID,tickfont:{color:MUTED,size:11}};
+  // ONE shared x-axis for both panels (anchored to the bottom strip so the date ticks sit at
+  // the very bottom). A single axis is what lets 'x unified' hover span BOTH panels at once —
+  // hovering either shows CFI + price + asymmetry together, with one full-height guide line.
+  lay.xaxis=Object.assign(lay.xaxis,{type:'date',anchor:'y3',title:'',
+    showspikes:true,spikemode:'across',spikethickness:1,spikecolor:'rgba(232,161,58,0.55)',spikedash:'dot',spikesnap:'cursor'});
   // top panel (domain 0.30–1): CFI left, BTC price right (overlay)
   lay.yaxis=Object.assign(lay.yaxis,{domain:[0.30,1],range:[0,100],title:{text:'CFI',font:{color:GOLD,size:11}},tickfont:{color:GOLD,size:11}});
   lay.yaxis2={overlaying:'y',side:'right',tickprefix:'$',tickformat:'~s',showgrid:false,zeroline:false,
     title:{text:'BTC price',font:{color:'#cdbfa8',size:11}},tickfont:{color:'#cdbfa8',size:11}};
   // bottom panel (domain 0–0.22): asymmetry in [-1,1], baseline at 0
-  lay.yaxis3={domain:[0,0.22],range:[-1,1],anchor:'x2',zeroline:true,zerolinewidth:1,zerolinecolor:'rgba(202,191,174,0.45)',
-    gridcolor:GRID,tickvals:[-1,0,1],ticktext:['long-side','0','short-side'],tickfont:{color:MUTED,size:9},
-    title:{text:'which side<br>is exposed',font:{color:MUTED,size:9}}};
+  lay.yaxis3={domain:[0,0.22],range:[-1,1],anchor:'x',zeroline:true,zerolinewidth:1,zerolinecolor:'rgba(202,191,174,0.45)',
+    gridcolor:GRID,tickvals:[-1,0,1],ticktext:['long-side','0','short-side'],tickfont:{color:MUTED,size:9}};
   lay.shapes=[{type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:0,y1:POLICY.calm,fillcolor:LONG,opacity:0.06,line:{width:0}},
               {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:POLICY.calm,y1:POLICY.elev,fillcolor:GOLD,opacity:0.06,line:{width:0}},
               {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:POLICY.elev,y1:100,fillcolor:SHORT,opacity:0.06,line:{width:0}}];
   const traces=[
     {x:x,y:cfi,name:'CFI',yaxis:'y',type:'scatter',mode:'lines',line:{color:GOLD,width:2,shape:'spline',smoothing:0.4},
-     fill:'tozeroy',fillcolor:'rgba(232,161,58,0.06)',hovertemplate:'CFI %{y:.1f}<extra></extra>'},
+     fill:'tozeroy',fillcolor:'rgba(232,161,58,0.06)',
+     customdata:asym.map(v=>v==null?'n/a':(v>=0?'+':'')+v.toFixed(2)),
+     hovertemplate:'CFI %{y:.1f}<br>asymmetry %{customdata}<extra></extra>'},
     {x:x,y:price,name:'BTC price',yaxis:'y2',type:'scatter',mode:'lines',line:{color:'#cdbfa8',width:1.5},
      hovertemplate:'$%{y:,.0f}<extra></extra>'},
-    {x:x,y:aPos,xaxis:'x2',yaxis:'y3',type:'scatter',mode:'lines',fill:'tozeroy',fillcolor:'rgba(229,86,78,0.25)',
+    {x:x,y:aPos,yaxis:'y3',type:'scatter',mode:'lines',fill:'tozeroy',fillcolor:'rgba(229,86,78,0.25)',
      line:{width:0},hoverinfo:'skip',showlegend:false},
-    {x:x,y:aNeg,xaxis:'x2',yaxis:'y3',type:'scatter',mode:'lines',fill:'tozeroy',fillcolor:'rgba(63,185,140,0.25)',
+    {x:x,y:aNeg,yaxis:'y3',type:'scatter',mode:'lines',fill:'tozeroy',fillcolor:'rgba(63,185,140,0.25)',
      line:{width:0},hoverinfo:'skip',showlegend:false},
-    {x:x,y:asym,name:'asymmetry',xaxis:'x2',yaxis:'y3',type:'scatter',mode:'lines',connectgaps:false,
+    {x:x,y:asym,name:'asymmetry',yaxis:'y3',type:'scatter',mode:'lines',connectgaps:false,
      line:{color:'#cabfae',width:1.3},hovertemplate:'asymmetry %{y:+.2f} · %{customdata}<extra></extra>',
      customdata:asym.map(v=>v==null?'':(v>0.02?'short-side (squeeze-up fuel)':v<-0.02?'long-side (flush-down fuel)':'balanced'))}];
   Plotly.react('cfiprice',traces,lay,CFG);
@@ -564,7 +573,8 @@ document.addEventListener('click',function(e){
 // Let Plotly re-read the new box for every visible chart inside a figure (after layout settles).
 function resizeFigCharts(fig){ if(!fig)return;
   requestAnimationFrame(()=>setTimeout(()=>{
-    fig.querySelectorAll('.js-plotly-plot').forEach(d=>{ if(d.offsetParent!==null) Plotly.Plots.resize(d); });
+    fig.querySelectorAll('.js-plotly-plot').forEach(d=>{ if(d.offsetParent===null)return;
+      if(d.id==='gauge' && window.__DATA__) renderGauge(window.__DATA__); else Plotly.Plots.resize(d); });
   },40));
 }
 
@@ -595,7 +605,9 @@ const slotEl =()=>document.getElementById('charts-slot');
 
 function resizeCharts(){
   clearTimeout(_rt); _rt=setTimeout(()=>{
-    ['gauge','cfiprice','ladder','heatmap'].forEach(id=>{ const el=document.getElementById(id);
+    const g=document.getElementById('gauge');   // re-render so the gauge number rescales to the new size
+    if(g && g.classList.contains('js-plotly-plot') && g.offsetParent!==null && window.__DATA__) renderGauge(window.__DATA__);
+    ['cfiprice','ladder','heatmap'].forEach(id=>{ const el=document.getElementById(id);
       if(el && el.classList.contains('js-plotly-plot') && el.offsetParent!==null) Plotly.Plots.resize(el); });
   },70);
 }
@@ -617,14 +629,22 @@ function clampGeom(){ const w=Math.max(pipGeom.width||0, PIP_MINW);   // use the
 function applyGeom(){ const c=chartsEl();
   c.style.left=pipGeom.left+'px'; c.style.top=pipGeom.top+'px';
   c.style.width=pipGeom.width+'px'; c.style.height=pipGeom.height+'px'; }
+// Default height = just the two figures (measured at the current width), capped at the viewport.
+function fitHeight(){ const c=chartsEl(); const availH=window.innerHeight-70-18;
+  const prev=c.style.height; c.style.height='auto'; const natural=c.offsetHeight+2; c.style.height=prev;
+  return Math.min(Math.max(natural,PIP_MINH), availH); }
 
 function setFloat(on){
   if(on===FLOATING)return;
   const c=chartsEl(), slot=slotEl(); if(!c||!slot)return;
   if(on){
     slot.style.height=c.offsetHeight+'px';   // reserve the in-flow space so nothing jumps
-    if(!pipGeom || !userMoved) pipGeom=defaultGeom();   // adapt to the viewport until the user customises
-    c.classList.add('floating'); clampGeom(); applyGeom();
+    c.classList.add('floating');
+    if(!pipGeom || !userMoved){
+      pipGeom=defaultGeom(); applyGeom();    // apply width first so the content wraps to it
+      pipGeom.height=fitHeight();            // then shrink to fit the two figures (capped at viewport)
+    }
+    clampGeom(); applyGeom();
     document.body.classList.add('has-pip'); FLOATING=true;
   } else {
     c.classList.remove('floating'); document.body.classList.remove('has-pip');
@@ -698,7 +718,7 @@ function initPip(){
   window.addEventListener('scroll',onScroll,{passive:true});
   window.addEventListener('resize',()=>{ if(!FLOATING)return;
     if(window.innerWidth<MIN_FLOAT_W){ setFloat(false); return; }
-    if(!userMoved) pipGeom=defaultGeom();   // keep filling the available space until the user customises
+    if(!userMoved){ pipGeom=defaultGeom(); applyGeom(); pipGeom.height=fitHeight(); }  // refit to viewport until customised
     clampGeom(); applyGeom(); resizeCharts(); });
   onScroll();
 }
