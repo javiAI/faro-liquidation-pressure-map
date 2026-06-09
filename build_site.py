@@ -314,14 +314,17 @@ _CSS = r"""
   .memo p, .memo li { font-size:15.5px; color:#cdc3b3; max-width:none; }
   .memo h3 { font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); margin:22px 0 4px; }
   .memo strong { color:var(--bone); font-weight:600; } .memo em { color:#dcd2c2; }
-  .memo a { color:var(--gold); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; transition:color .15s ease; }
-  .memo a:hover { color:#f3c171; }
+  .wrap a { color:var(--gold); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; transition:color .15s ease; }
+  .wrap a:hover { color:#f3c171; }
   ul { padding-left:20px; } li { margin:5px 0; }
   code { font-family:var(--mono); background:var(--ink-2); border:1px solid var(--hair); padding:1px 6px; border-radius:5px; font-size:12.5px; color:#e9c98c; }
   .callout { border-left:2px solid var(--gold); background:linear-gradient(90deg,rgba(232,161,58,0.07),transparent); padding:13px 18px; margin:16px 0; border-radius:0 10px 10px 0; }
   .callout.warn { border-left-color:var(--short); background:linear-gradient(90deg,rgba(229,86,78,0.08),transparent); }
   .callout p { margin:0; max-width:none; }
-  .lead { font-size:16.5px; line-height:1.6; color:#d6cbb9; max-width:none; margin:0 0 6px; }
+  .lead { font-size:16.5px; line-height:1.6; color:#d6cbb9; max-width:72ch; margin:0 0 6px; }
+  /* page-opening intro that lives in the hero, above the cards */
+  .hero-intro { font-size:15px; line-height:1.62; color:#c8bdac; max-width:72ch; margin:12px 0 0; }
+  .hero-intro strong { color:var(--bone); font-weight:600; } .hero-intro em { color:#dcd2c2; }
   .callout.reading { border-left-color:var(--long); background:linear-gradient(90deg,rgba(63,185,140,0.08),transparent); }
   .reading-tag { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--long); margin-bottom:6px; }
   #reading-line { font-size:14.5px; color:#ded2bf; }
@@ -801,9 +804,16 @@ def _hero(snapshot: dict[str, Any]) -> str:
     <span>Hyperliquid · BTC perps</span><span class="dot"></span><span>live proof of concept</span></div>
   <h1>Liquidation Pressure Map
       <span class="l2"><span class="amp">&amp;</span> Cascade Fragility Index</span></h1>
-  <p class="dek">A <em>forward-looking</em> risk metric: where the currently-open BTC
-     leverage on Hyperliquid would be force-liquidated — and how fragile that makes the
-     market structure right now. Updates itself every ~10 min, no reload.</p>
+  <p class="lead">This is my entry for the Faro Head of Data challenge: use Faro as an active trader,
+     find one piece of data that is genuinely missing — not a nice-to-have dashboard stat — and take it
+     from idea to a working proof of concept. I started from a question I actually ask intraday and worked
+     back to the data, rather than picking a convenient dataset and dressing it up as a signal.</p>
+  <p class="hero-intro">I also treated it as a product question, not only a deliverable. This page is a
+     proposal for how a metric like this could live <em>inside</em> Faro — a focused detail view a trader
+     opens from a signal to interrogate it properly (the price levels, the regime, how it has moved)
+     instead of reading a single number off a dashboard. The same pattern would fit any Faro metric; this
+     is just one worked example, running live on Hyperliquid BTC. The metric, the Airflow DAG and the full
+     pipeline are in the repo: <a href="https://github.com/javiAI/faro-liquidation-pressure-map" target="_blank" rel="noopener">github.com/javiAI/faro-liquidation-pressure-map</a>.</p>
   <div class="rail">
      <span class="tag">regime <b id="regime-badge" style="color:{regime_color}">{regime.upper()}</b></span>
      <span class="tag">confidence <b id="conf-badge" style="color:{conf_color}">{conf}</b></span>
@@ -954,22 +964,10 @@ def _memo(snapshot: dict[str, Any]) -> str:
     return f"""
 <section class="memo reveal" style="animation-delay:.10s">
 
-<p class="lead">This is my entry for the Faro Head of Data challenge: use Faro as an active trader,
-find one piece of data that is genuinely missing — not a nice-to-have dashboard stat — and take it
-from idea to a working proof of concept. I started from a question I actually ask intraday and worked
-back to the data, rather than picking a convenient dataset and dressing it up as a signal.</p>
-
-<p>I also treated it as a product question, not only a deliverable. This page is a proposal for how a
-metric like this could live <em>inside</em> Faro — a focused detail view a trader opens from a signal
-to interrogate it properly (the price levels, the regime, how it has moved) instead of reading a
-single number off a dashboard. The same pattern would fit any Faro metric; this is just one worked
-example, running live on Hyperliquid BTC. The metric, the Airflow DAG and the full pipeline are in
-the repo: <a href="https://github.com/javiAI/faro-liquidation-pressure-map" target="_blank" rel="noopener">github.com/javiAI/faro-liquidation-pressure-map</a>.</p>
-
-<p>The gap itself: Faro already surfaces <em>Liquidation Volume</em>, the liquidations that have
-<strong>already fired</strong>. What I kept reaching for was the other half of that picture — not what
-just got liquidated, but <strong>where the leverage that is still open would get liquidated
-next</strong>. That blind spot is what this fills.</p>
+<p class="lead">Faro already surfaces <em>Liquidation Volume</em> — the liquidations that have
+<strong>already fired</strong>. The half I kept reaching for is the forward one: not what just got
+liquidated, but <strong>where the leverage that is still open would get liquidated next</strong>.
+That blind spot is the metric below.</p>
 
 <div class="callout reading"><div class="reading-tag">▮ current reading · live</div>
 <p id="reading-line">{_reading(snapshot)}</p></div>
