@@ -73,8 +73,10 @@ class MapParams:
     min_notional_usd: float = 10_000.0   # drop dust (and its garbage liquidationPx)
     max_distance_pct: float = 0.60        # ignore liquidations >60% away (noise/garbage)
     tau: float = 0.08                     # proximity scale of the kernel (8%)
-    hist_range_pct: float = 0.30          # histogram spans mark +/- 30%
-    n_buckets: int = 120                  # ~0.5% per bucket at +/-30%
+    hist_range_pct: float = 0.60          # histogram spans mark +/- 60% (same as the keep filter,
+                                          # so every kept position is on the map; the chart opens
+                                          # zoomed to +/-30% and you can pan/zoom out to the rest)
+    n_buckets: int = 240                  # ~0.5% per bucket across +/-60%
     # Fixed contract, not freely tunable: these three bands back the summary keys
     # ("0.02"/"0.05"/"0.10") and the SQLite columns liq_within_{2,5,10}pct_usd. Changing
     # them requires updating summary()/SCHEMA_SQL/the KPI keys in lockstep.

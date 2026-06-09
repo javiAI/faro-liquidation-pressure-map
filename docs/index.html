@@ -218,8 +218,9 @@
       <span class="l2"><span class="amp">&amp;</span> Cascade Fragility Index</span></h1>
   <p class="lead">This is my entry for the Faro Head of Data challenge: use Faro as an active trader,
      find one piece of data that is missing and would matter to a trader — not a nice-to-have dashboard
-     stat — and take it from an idea to a working proof of concept. I started from a question I actually
-     ask intraday and worked back to the data, not the other way round.</p>
+     stat — and take it from an idea to a working proof of concept. I started from a real trading
+     question and then built the data to answer it, instead of starting from a dataset and looking for a
+     use for it.</p>
   <p class="hero-intro">I also treated it as a product question, not just a deliverable. This page is a
      proposal for how a metric like this could live <em>inside</em> Faro — a detail view a trader opens
      from a signal to look at it properly (the price levels, the regime, how it has moved) instead of a
@@ -347,8 +348,10 @@ no public endpoint returns the whole book, so the map is built from a sample of 
   <div class="sec-head" style="margin-top:40px"><span class="sec-num">02</span><h2>Proof-of-Concept Airflow DAG</h2></div>
 <p>The DAG (<code>liquidation_pressure_dag.py</code>) is thin on purpose: it sequences reusable
 modules and does nothing clever itself. All the real logic — the API client, the metric, the storage
-layer — lives in plain importable functions, so everything is unit-testable and the same code runs
-whether Airflow drives it or the small runner behind the live page does. Flow:
+layer — lives in plain importable functions, so the same code runs whether Airflow drives it or the
+small runner behind the live page does. That logic is unit-tested: <code>pytest -q</code> covers the
+CFI and asymmetry maths (including that near-mark dust can't spike the index), the cleaning filters,
+and the loss-resistant history — run it before any deploy. Flow:
 <code>refresh_universe → extract_market_context → extract_positions → validate → transform → load</code>.</p>
 <p><strong>Scheduling cadence.</strong> Every ~10 minutes. Open positions and the mark price move
 continuously, so a stale map misleads; but positions don't turn over second to second and I won't
@@ -498,9 +501,19 @@ proximity, bounded 0–100; the smooth kernel is what stops a single dust positi
 blowing it up. <strong>Asymmetry = (short_pressure − long_pressure) / (short_pressure +
 long_pressure)</strong>, where side pressure is Σ N·K(d) on that side. The Fig.01 density curve is
 gaussian-smoothed for legibility (area stays proportional to notional); hover reports the real
-notional within ±1.25% of a level. The regime bands (calm &lt; 25,
-elevated &lt; 50, else fragile) are illustrative starting points,
-to be calibrated empirically on the CFI history the pipeline is now accumulating.</p>
+notional within ±1.25% of a level.</p>
+<p><strong>Two distances, two jobs.</strong> The keep filter drops any position whose trigger sits
+more than 60% from the mark — at that range the price is usually garbage, not real risk. The map is
+built over that same ±60%, but it opens zoomed to the mark ±30% (the band that matters for a near-term
+cascade); pan or zoom out on the chart to see the rest. Either way the kernel makes anything past
+roughly 20% count for almost nothing in the CFI.</p>
+<p><strong>On the regime bands.</strong> The cut-offs (calm &lt; 25,
+elevated &lt; 50, else fragile) are provisional. I set them by hand
+from the range the CFI takes in the readings so far — low in calm books, climbing as big clusters pull
+in toward the mark — not from a long history, because there isn't one yet: the series only accumulates
+forward and the map can't be backfilled from the public API. They should be recalibrated once enough
+history builds up, or off a proper backtest once the production backfill in Appendix C exists, rather
+than treated as fixed.</p>
 
   <div class="sec-head" style="margin-top:38px"><span class="sec-num">C</span><h2>Wallet Universe, Coverage &amp; Path to Production</h2></div>
 <h3>How the sample is built today</h3>
@@ -633,6 +646,7 @@ function renderLadder(d){
   lay.margin={l:78,r:66,t:22,b:56}; lay.hovermode='y unified'; if(bars) lay.barmode='overlay';
   lay.xaxis=Object.assign(lay.xaxis,{title:{text:bars?'Liquidable notional per price level (USD)':'Liquidable notional density (smoothed) — area ∝ notional',font:{color:MUTED,size:11}},tickprefix:'$',tickformat:'~s',rangemode:'tozero',zeroline:false});
   lay.yaxis=Object.assign(lay.yaxis,{title:{text:'Liquidation price (USD)',font:{color:MUTED,size:11}},tickprefix:'$',tickformat:',.0f',showgrid:false,
+     range:[mark*0.70,mark*1.30],   // open at mark ±30% (the zone that matters); data runs to ±60% — pan/zoom out to see it
      showspikes:true,spikemode:'across',spikethickness:1,spikecolor:GOLD,spikedash:'dot',spikesnap:'cursor'});
   lay.shapes=[{type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:mark*0.95,y1:mark*1.05,fillcolor:GOLD,opacity:0.05,line:{width:0}},
               {type:'line',xref:'paper',x0:0,x1:1,yref:'y',y0:mark,y1:mark,line:{color:GOLD,width:1.3,dash:'dot'}}];
@@ -713,6 +727,8 @@ function renderHeatmap(d){
   const lay=baseLayout('');   // figcaption + explanation above name the chart
   lay.margin={l:78,r:34,t:22,b:56};
   lay.yaxis=Object.assign(lay.yaxis,{title:{text:'Price (USD)',font:{color:MUTED,size:11}},tickprefix:'$',tickformat:',.0f'});
+  const mk=d.market&&d.market.mark_px;
+  if(mk) lay.yaxis.range=[mk*0.70,mk*1.30];   // open at the latest mark ±30%; data runs to ±60% — pan/zoom out
   lay.xaxis=Object.assign(lay.xaxis,{title:{text:'Time (UTC, '+per+')',font:{color:MUTED,size:11}},type:'date'});
   if(hm.x.length>1) lay.xaxis.range=[hm.x[0],hm.x[hm.x.length-1]];  // data reaches the right edge (mark too)
   Plotly.react('heatmap',[heat,markline],lay,CFG);
