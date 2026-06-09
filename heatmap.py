@@ -3,13 +3,16 @@ heatmap.py — build the time × price liquidity heatmap from per-snapshot histo
 
 Each snapshot stores where open BTC leverage would liquidate (notional per price
 bucket). Because the mark price moves, every snapshot's buckets sit at different
-absolute prices, so we rebin them onto ONE fixed absolute-price grid and group
-snapshots by hour. The cell value is the MEAN liquidable notional at that price
-during that hour — a mean (not a sum) because positions are a stock, not a flow:
-summing snapshots within an hour would double-count the same open positions.
+absolute prices, so we rebin them onto ONE fixed absolute-price grid. We then
+aggregate over time at three resolutions (10-min / hourly / daily); the cell value
+is the MEAN liquidable notional at that price during that period — a mean (not a
+sum) because positions are a stock, not a flow (summing snapshots within a period
+would double-count the same open positions).
 
-Returns a dict ready for a Plotly heatmap: {x: hour labels, y: price grid,
-z: matrix[price][hour], mark: hourly mark price} — or None if there is no data.
+Returns {res: {x, y, z, mark}} for res in {"min10","hour","day"} (shared price grid
+y), or None if there is no data. The mark line shares each resolution's x, so it
+spans the full width; in the 10-min view each column is one snapshot, so the mark
+reaches the latest reading.
 """
 
 from __future__ import annotations
@@ -20,18 +23,16 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+# (pandas floor alias, max columns kept) per resolution
+_RESOLUTIONS = {"min10": ("10min", 432), "hour": ("h", 336), "day": ("D", 120)}
 
-def build_heatmap(map_history: list[dict[str, Any]], n_bins: int = 64,
-                  max_hours: int = 336) -> dict[str, Any] | None:
+
+def build_heatmap(map_history: list[dict[str, Any]], n_bins: int = 64) -> dict[str, Any] | None:
     if not map_history:
         return None
 
-    # global price range from non-zero buckets (clip extreme tails for a tight axis)
-    prices: list[float] = []
-    for snap in map_history:
-        for p, lo, sh in snap["b"]:
-            if lo + sh > 0:
-                prices.append(p)
+    # shared absolute-price grid from non-zero buckets (clip tails for a tight axis)
+    prices = [p for snap in map_history for p, lo, sh in snap["b"] if lo + sh > 0]
     if len(prices) < 2:
         return None
     pmin, pmax = float(np.percentile(prices, 0.5)), float(np.percentile(prices, 99.5))
@@ -40,29 +41,29 @@ def build_heatmap(map_history: list[dict[str, Any]], n_bins: int = 64,
     edges = np.linspace(pmin, pmax, n_bins + 1)
     centers = (edges[:-1] + edges[1:]) / 2
 
-    # group snapshots by hour
-    groups: dict[pd.Timestamp, list[dict]] = defaultdict(list)
+    # rebin each snapshot onto the grid once (reused by every resolution)
+    cols: list[tuple[pd.Timestamp, float, np.ndarray]] = []
     for snap in map_history:
-        hour = pd.Timestamp(snap["timestamp"]).tz_convert("UTC").floor("h")
-        groups[hour].append(snap)
-    hours = sorted(groups)[-max_hours:]
+        col = np.zeros(n_bins)
+        for p, lo, sh in snap["b"]:
+            idx = int(np.searchsorted(edges, p, side="right") - 1)
+            if 0 <= idx < n_bins:
+                col[idx] += lo + sh
+        cols.append((pd.Timestamp(snap["timestamp"]).tz_convert("UTC"), float(snap["mark"]), col))
+    cols.sort(key=lambda c: c[0])
 
-    z = np.zeros((n_bins, len(hours)))
-    marks: list[float] = []
-    for j, hour in enumerate(hours):
-        snaps = groups[hour]
-        acc = np.zeros(n_bins)
-        for snap in snaps:
-            for p, lo, sh in snap["b"]:
-                idx = int(np.searchsorted(edges, p, side="right") - 1)
-                if 0 <= idx < n_bins:
-                    acc[idx] += lo + sh
-        z[:, j] = acc / len(snaps)          # mean across snapshots in the hour
-        marks.append(float(np.mean([s["mark"] for s in snaps])))
+    def aggregate(freq: str, cap: int) -> dict[str, Any]:
+        groups: dict[pd.Timestamp, list[tuple[float, np.ndarray]]] = defaultdict(list)
+        for ts, mark, col in cols:
+            groups[ts.floor(freq)].append((mark, col))
+        keys = sorted(groups)[-cap:]
+        z = np.zeros((n_bins, len(keys)))
+        marks: list[float] = []
+        for j, k in enumerate(keys):
+            members = groups[k]
+            z[:, j] = np.mean([c for _, c in members], axis=0)
+            marks.append(float(np.mean([m for m, _ in members])))
+        return {"x": [k.isoformat() for k in keys], "y": centers.tolist(),
+                "z": z.tolist(), "mark": marks}
 
-    return {
-        "x": [h.isoformat() for h in hours],
-        "y": centers.tolist(),
-        "z": z.tolist(),
-        "mark": marks,
-    }
+    return {res: aggregate(freq, cap) for res, (freq, cap) in _RESOLUTIONS.items()}
