@@ -59,6 +59,11 @@ from hl_client import HyperliquidClient, MarketContext
 # Regime thresholds — ILLUSTRATIVE, to be calibrated on accumulated history.
 REGIME_BANDS = {"calm_max": 25.0, "elevated_max": 50.0}  # >50 = fragile/red
 
+# Validation-gate thresholds — single source shared by the runner and the Airflow DAG,
+# so "what counts as low-confidence" can never drift between the two drivers.
+MIN_POSITIONS = 5       # fewer kept positions → flag the reading low-confidence
+COVERAGE_FLOOR = 0.05   # coverage below this fraction of OI → flag low-confidence
+
 
 @dataclass
 class MapParams:
@@ -70,7 +75,10 @@ class MapParams:
     tau: float = 0.08                     # proximity scale of the kernel (8%)
     hist_range_pct: float = 0.30          # histogram spans mark +/- 30%
     n_buckets: int = 120                  # ~0.5% per bucket at +/-30%
-    near_bands: tuple[float, ...] = (0.02, 0.05, 0.10)  # report USD within these
+    # Fixed contract, not freely tunable: these three bands back the summary keys
+    # ("0.02"/"0.05"/"0.10") and the SQLite columns liq_within_{2,5,10}pct_usd. Changing
+    # them requires updating summary()/SCHEMA_SQL/the KPI keys in lockstep.
+    near_bands: tuple[float, ...] = (0.02, 0.05, 0.10)
 
 
 @dataclass
@@ -213,31 +221,33 @@ def clean_positions(
 
 
 def build_histogram(df: pd.DataFrame, mark_px: float, params: MapParams) -> pd.DataFrame:
-    """Aggregate liquidable notional into price buckets, split long vs short."""
+    """Aggregate liquidable notional into price buckets, split long vs short.
+
+    Single vectorized pass (pd.cut + groupby) instead of re-scanning the frame once per
+    bucket, then reindexed onto the full bucket grid so empty buckets are present as zeros.
+    """
+    n = params.n_buckets
     lo = mark_px * (1 - params.hist_range_pct)
     hi = mark_px * (1 + params.hist_range_pct)
-    edges = [lo + (hi - lo) * k / params.n_buckets for k in range(params.n_buckets + 1)]
-    rows = []
-    for b in range(params.n_buckets):
-        b_lo, b_hi = edges[b], edges[b + 1]
-        in_bucket = df[(df["liquidation_px"] >= b_lo) & (df["liquidation_px"] < b_hi)] \
-            if not df.empty else df
-        long_n = float(in_bucket[in_bucket["side"] == "long"]["notional_usd"].sum()) \
-            if not df.empty else 0.0
-        short_n = float(in_bucket[in_bucket["side"] == "short"]["notional_usd"].sum()) \
-            if not df.empty else 0.0
-        mid = (b_lo + b_hi) / 2
-        rows.append(
-            {
-                "price_low": b_lo,
-                "price_high": b_hi,
-                "price_mid": mid,
-                "distance_pct": (mid - mark_px) / mark_px * 100.0,
-                "long_notional": long_n,
-                "short_notional": short_n,
-            }
-        )
-    return pd.DataFrame(rows)
+    edges = [lo + (hi - lo) * k / n for k in range(n + 1)]
+    mids = [(edges[b] + edges[b + 1]) / 2 for b in range(n)]
+    out = pd.DataFrame({
+        "price_low": edges[:-1],
+        "price_high": edges[1:],
+        "price_mid": mids,
+        "distance_pct": [(m - mark_px) / mark_px * 100.0 for m in mids],
+        "long_notional": 0.0,
+        "short_notional": 0.0,
+    })
+    if not df.empty:
+        # bucket index per position; positions outside [lo, hi) become NaN and drop out
+        bucket = pd.cut(df["liquidation_px"], bins=edges, right=False,
+                        include_lowest=True, labels=False)
+        grouped = (df.assign(_bucket=bucket).dropna(subset=["_bucket"])
+                     .groupby(["_bucket", "side"])["notional_usd"].sum())
+        for (b, side), notional in grouped.items():
+            out.at[int(b), f"{side}_notional"] = float(notional)
+    return out
 
 
 def compute_metrics(
@@ -260,16 +270,11 @@ def compute_metrics(
         cfi = 0.0
         long_pressure = short_pressure = 0.0
     else:
-        weighted = (df["notional_usd"] * df["proximity"]).sum()
-        cfi = 100.0 * weighted / df["notional_usd"].sum()
-        long_pressure = float(
-            (df[df["side"] == "long"]["notional_usd"]
-             * df[df["side"] == "long"]["proximity"]).sum()
-        )
-        short_pressure = float(
-            (df[df["side"] == "short"]["notional_usd"]
-             * df[df["side"] == "short"]["proximity"]).sum()
-        )
+        weighted_proximity = df["notional_usd"] * df["proximity"]   # one pass, no re-slicing
+        cfi = 100.0 * weighted_proximity.sum() / df["notional_usd"].sum()
+        by_side = weighted_proximity.groupby(df["side"]).sum()
+        long_pressure = float(by_side.get("long", 0.0))
+        short_pressure = float(by_side.get("short", 0.0))
 
     # --- Long/Short Asymmetry -------------------------------------------------
     denom = long_pressure + short_pressure
@@ -328,3 +333,24 @@ def build_liquidation_map(
         client, addresses, coin=params.coin, progress_every=progress_every
     )
     return compute_metrics(positions, market, len(addresses), params)
+
+
+def validate_map(m: LiquidationMap) -> list[str]:
+    """Lightweight sanity gate. Returns a list of warnings (empty = clean).
+
+    We do NOT hard-fail on a thin sample, but we surface it: a map built from too few
+    positions or low coverage should be shown with lower confidence, not silently
+    trusted. Shared by the runner and the DAG so both judge confidence identically.
+    """
+    warnings: list[str] = []
+    n = m.coverage["n_btc_positions"]
+    if n < MIN_POSITIONS:
+        warnings.append(f"only {int(n)} positions kept (<{MIN_POSITIONS}); "
+                        f"treat signals as low-confidence")
+    if m.coverage["coverage_ratio"] < COVERAGE_FLOOR:
+        warnings.append(f"coverage {m.coverage['coverage_ratio']:.1%} of OI is low")
+    if not (0 <= m.cfi <= 100):
+        warnings.append(f"CFI out of range: {m.cfi}")
+    if m.market.mark_px <= 0:
+        warnings.append("non-positive mark price")
+    return warnings

@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pendulum
 
@@ -47,10 +47,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from airflow.decorators import dag, task  # noqa: E402
 from airflow.exceptions import AirflowFailException  # noqa: E402
 
-N_WALLETS = 2000               # ~47% of BTC OI at ~7.5 req/s concurrent (~4.5 min/run)
-COVERAGE_FLOOR = 0.05          # below this, alert: sample too thin to trust
-STALENESS_FACTOR = 2           # alert if mark/oracle look stale vs cadence
-MIN_POSITIONS = 5
+N_WALLETS = 2000   # ~47% of BTC OI at ~7.5 req/s concurrent (~4.5 min/run)
+COIN = "BTC"       # single source for what we fetch; the map is built with MapParams(coin=COIN)
+# Validation thresholds (MIN_POSITIONS / COVERAGE_FLOOR) live in liquidation_map and are
+# imported lazily where used, so the runner and this DAG share one confidence policy.
 
 
 # --------------------------------------------------------------- alerting stub
@@ -107,7 +107,7 @@ def liquidation_pressure_map():
     def extract_market_context() -> dict:
         """metaAndAssetCtxs → BTC market context (the anchor for all distances)."""
         from hl_client import HyperliquidClient
-        return HyperliquidClient().get_market_context("BTC").__dict__
+        return HyperliquidClient().get_market_context(COIN).to_dict()
 
     @task
     def extract_positions(addresses: list[str]) -> list[dict]:
@@ -118,7 +118,7 @@ def liquidation_pressure_map():
         """
         from hl_client import HyperliquidClient
         from liquidation_map import fetch_positions
-        positions, n_errors = fetch_positions(HyperliquidClient(), addresses, "BTC")
+        positions, n_errors = fetch_positions(HyperliquidClient(), addresses, COIN)
         # observability: surface the error rate even when the run succeeds
         err_rate = n_errors / max(len(addresses), 1)
         if err_rate > 0.5:
@@ -143,6 +143,7 @@ def liquidation_pressure_map():
             # mark vs oracle should track closely; large drift = data-quality event
             raise AirflowFailException(f"mark/oracle drift {drift:.1%} exceeds 5%")
 
+        from liquidation_map import MIN_POSITIONS  # shared confidence policy
         n_with_pos = len(positions)
         n_null = sum(1 for p in positions if p.get("liquidationPx") is None)
         soft_warnings = []
@@ -161,16 +162,15 @@ def liquidation_pressure_map():
         observability (so the Airflow UI shows CFI/coverage at a glance).
         """
         from hl_client import MarketContext
-        from liquidation_map import MapParams, compute_metrics
+        from liquidation_map import MapParams, compute_metrics, validate_map
         from storage import append_metrics_history, write_latest_snapshot
 
-        mkt = MarketContext(**market)
-        m = compute_metrics(positions, mkt, n_wallets, MapParams())
+        mkt = MarketContext.from_dict(market)
+        m = compute_metrics(positions, mkt, n_wallets, MapParams(coin=COIN))
 
-        if m.coverage["coverage_ratio"] < COVERAGE_FLOOR:
-            # observability hook, not a hard fail: publish with low confidence + alert
-            print(f"[ALERT] coverage {m.coverage['coverage_ratio']:.1%} below floor "
-                  f"{COVERAGE_FLOOR:.0%}")
+        # observability hook, not a hard fail: surface low-confidence reasons (shared policy)
+        for warning in validate_map(m):
+            print(f"[ALERT] {warning}")
 
         write_latest_snapshot(m)
         append_metrics_history(m)
@@ -184,15 +184,16 @@ def liquidation_pressure_map():
         concerns are explicit. Reads the snapshot the transform task wrote.
         """
         import json
-        from storage import LATEST_SNAPSHOT_JSON
+        from storage import LATEST_SNAPSHOT_JSON, write_sqlite_from_snapshot
         from build_site import generate_site
 
         # The transform task already wrote the snapshot + history (the derived layer).
         # Here we mirror it into the warehouse table and publish the site, so SQLite
-        # and the page share one source of truth.
+        # and the page share one source of truth. The SQLite write reuses the exact
+        # same code path as the in-process pipeline (no forked column list / SQL).
         with open(LATEST_SNAPSHOT_JSON) as f:
             snap = json.load(f)
-        _write_sqlite_from_snapshot(snap)
+        write_sqlite_from_snapshot(snap)
         out = generate_site()
         print(f"[load] published {out} · CFI={summary['cfi']} regime={summary['regime']}")
         return out
@@ -206,36 +207,6 @@ def liquidation_pressure_map():
     # `checks` is a non-data dependency: validate must pass before we transform/load
     checks >> summary
     load(summary)
-
-
-def _write_sqlite_from_snapshot(snap: dict) -> None:
-    """Write the relational mirror from a snapshot dict (no map object needed)."""
-    import sqlite3
-    from storage import SCHEMA_SQL, SQLITE_DB
-
-    s = snap["summary_row"]
-    conn = sqlite3.connect(SQLITE_DB)
-    try:
-        conn.executescript(SCHEMA_SQL)
-        cols = ["timestamp", "coin", "mark_px", "oracle_px", "funding_hourly", "oi_usd",
-                "cfi", "regime", "asymmetry", "liq_within_2pct_usd", "liq_within_5pct_usd",
-                "liq_within_10pct_usd", "n_wallets", "n_positions", "sampled_notional_usd",
-                "coverage_ratio", "n_null_liqpx", "n_dust_filtered", "n_far_filtered"]
-        conn.execute(
-            f"INSERT OR REPLACE INTO liq_map_snapshot ({','.join(cols)}) "
-            f"VALUES ({','.join('?' for _ in cols)})", [s[c] for c in cols])
-        conn.execute("DELETE FROM liq_map_histogram WHERE timestamp = ?", (s["timestamp"],))
-        conn.executemany(
-            "INSERT INTO liq_map_histogram "
-            "(timestamp, price_mid, distance_pct, long_notional, short_notional) "
-            "VALUES (?,?,?,?,?)",
-            [(s["timestamp"], h["price_mid"], h["distance_pct"],
-              h["long_notional"], h["short_notional"])
-             for h in snap["histogram"]
-             if h["long_notional"] > 0 or h["short_notional"] > 0])
-        conn.commit()
-    finally:
-        conn.close()
 
 
 dag = liquidation_pressure_map()

@@ -26,8 +26,9 @@ import subprocess
 
 import pandas as pd
 
-from storage import (LEDGER_JSONL, MAP_HISTORY_JSONL, METRICS_CSV, _persist_history,
-                     load_ledger, load_map_history, load_metrics_history)
+from storage import (LEDGER_JSONL, MAP_HISTORY_JSONL, METRICS_CSV, _dedup_by_timestamp,
+                     _persist_history, compact_histogram, iter_json_lines, load_ledger,
+                     load_map_history, load_metrics_history)
 
 # repo-relative paths as git knows them
 GIT_LEDGER = "data/cfi_history.jsonl"
@@ -67,14 +68,7 @@ def collect_all_points() -> pd.DataFrame:
 
     # then walk git history of both files
     for content in _git_versions(GIT_LEDGER):
-        recs = []
-        for line in content.splitlines():
-            line = line.strip()
-            if line:
-                try:
-                    recs.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
+        recs = iter_json_lines(content.splitlines())
         if recs:
             add(pd.DataFrame(recs))
     for content in _git_versions(GIT_CSV):
@@ -85,22 +79,16 @@ def collect_all_points() -> pd.DataFrame:
 
     if not rows:
         return pd.DataFrame()
-    return (pd.DataFrame(list(rows.values()))
-            .drop_duplicates("timestamp").sort_values("timestamp")
-            .reset_index(drop=True))
+    return _dedup_by_timestamp(pd.DataFrame(list(rows.values())))
 
 
 def _snap_to_map_line(content: str) -> dict | None:
     """Turn a committed latest_snapshot.json into a compact map_history record."""
     try:
         snap = json.loads(content)
-        ts = snap["provenance"]["generated_at"]
-        mark = snap["market"]["mark_px"]
-        buckets = [[round(float(b["price_mid"]), 1), round(float(b["long_notional"])),
-                    round(float(b["short_notional"]))]
-                   for b in snap.get("histogram", [])
-                   if b.get("long_notional", 0) > 0 or b.get("short_notional", 0) > 0]
-        return {"timestamp": ts, "mark": mark, "b": buckets}
+        return {"timestamp": snap["provenance"]["generated_at"],
+                "mark": snap["market"]["mark_px"],
+                "b": compact_histogram(snap.get("histogram", []))}
     except Exception:  # noqa: BLE001
         return None
 
@@ -112,14 +100,9 @@ def collect_map_history() -> list[dict]:
     for rec in load_map_history():
         rows.setdefault(rec["timestamp"], rec)
     for content in _git_versions(GIT_MAP):
-        for line in content.splitlines():
-            line = line.strip()
-            if line:
-                try:
-                    d = json.loads(line)
-                    rows.setdefault(d["timestamp"], d)
-                except json.JSONDecodeError:
-                    pass
+        for d in iter_json_lines(content.splitlines()):
+            if "timestamp" in d:
+                rows.setdefault(d["timestamp"], d)
     for content in _git_versions(GIT_SNAPSHOT):
         rec = _snap_to_map_line(content)
         if rec:

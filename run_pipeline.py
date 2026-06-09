@@ -19,7 +19,7 @@ import os
 import time
 
 from hl_client import HyperliquidClient
-from liquidation_map import MapParams, build_liquidation_map
+from liquidation_map import MapParams, build_liquidation_map, validate_map
 from storage import persist_all
 import wallets
 
@@ -47,27 +47,6 @@ def ensure_universe(n: int, max_age_h: float = UNIVERSE_MAX_AGE_H) -> list[str]:
     else:
         print(f"[universe] using cached universe (age {age:.1f}h, refresh at {max_age_h}h)")
     return cached[:n]   # top-N by activity rank
-
-
-def validate_map(m, *, min_positions: int = 5) -> list[str]:
-    """Lightweight sanity gate. Returns a list of warnings (empty = clean).
-
-    We do NOT hard-fail on a thin sample, but we surface it: a map built from too
-    few positions should be shown with lower confidence, not silently trusted.
-    """
-    warnings: list[str] = []
-    if m.coverage["n_btc_positions"] < min_positions:
-        warnings.append(
-            f"only {int(m.coverage['n_btc_positions'])} positions kept "
-            f"(<{min_positions}); treat signals as low-confidence"
-        )
-    if m.coverage["coverage_ratio"] < 0.05:
-        warnings.append(f"coverage {m.coverage['coverage_ratio']:.1%} of OI is low")
-    if not (0 <= m.cfi <= 100):
-        warnings.append(f"CFI out of range: {m.cfi}")
-    if m.market.mark_px <= 0:
-        warnings.append("non-positive mark price")
-    return warnings
 
 
 def run(n_wallets: int = 2000, *, render: bool = True) -> None:

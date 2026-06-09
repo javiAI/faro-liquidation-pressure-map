@@ -28,8 +28,17 @@ import numpy as np
 import pandas as pd
 
 from heatmap import build_heatmap
+from liquidation_map import REGIME_BANDS
 from storage import LATEST_SNAPSHOT_JSON, load_map_history, load_metrics_history
 from viz import _gaussian_smooth, export_memo_png
+
+# Single source of truth for the regime/confidence visual policy. The thresholds live
+# in liquidation_map.REGIME_BANDS; here we add the colour mapping and confidence cutoffs,
+# and thread ALL of them into the page via window.__CFG__ so the client JS never hardcodes
+# its own copy (the bands are explicitly slated for recalibration).
+REGIME_COLORS = {"calm": "var(--long)", "elevated": "var(--gold)", "fragile": "var(--short)"}
+CONF_HIGH = (0.30, 40)   # (min coverage_ratio, min positions) → "High"
+CONF_MED = (0.15, 20)    # → "Medium"; else "Low"
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SITE_DIR = os.path.join(ROOT, "site")
@@ -51,9 +60,9 @@ def _money(x: float) -> str:
 def _confidence(snapshot: dict[str, Any]) -> tuple[str, str]:
     cov = snapshot["coverage"]["coverage_ratio"]
     n = snapshot["coverage"]["n_btc_positions"]
-    if cov >= 0.30 and n >= 40:
+    if cov >= CONF_HIGH[0] and n >= CONF_HIGH[1]:
         return "High", "var(--long)"
-    if cov >= 0.15 and n >= 20:
+    if cov >= CONF_MED[0] and n >= CONF_MED[1]:
         return "Medium", "var(--gold)"
     return "Low", "var(--short)"
 
@@ -200,6 +209,7 @@ _JS = r"""
 const LONG='#3fb98c', SHORT='#e5564e', GOLD='#e8a13a', FONT='#ece6da', MUTED='#9a8f7d',
       GRID='rgba(150,128,92,0.13)', MONO='IBM Plex Mono, ui-monospace, monospace';
 const CFG={displayModeBar:false, responsive:true};
+const POLICY=window.__CFG__||{};   // regime bands/colors + confidence cutoffs (single source)
 let GEN=null, VIEW='live';
 
 function money(x){const a=Math.abs(x);
@@ -214,8 +224,8 @@ function baseLayout(title){return {
   xaxis:{gridcolor:GRID,zerolinecolor:GRID,linecolor:GRID,tickfont:{color:MUTED,size:11}},
   yaxis:{gridcolor:GRID,zerolinecolor:GRID,linecolor:GRID,tickfont:{color:MUTED,size:11}} };}
 
-function confidence(d){const c=d.coverage.coverage_ratio,n=d.coverage.n_btc_positions;
-  if(c>=0.30&&n>=40)return['High','var(--long)']; if(c>=0.15&&n>=20)return['Medium','var(--gold)'];
+function confidence(d){const c=d.coverage.coverage_ratio,n=d.coverage.n_btc_positions,k=POLICY.conf;
+  if(c>=k.highCov&&n>=k.highN)return['High','var(--long)']; if(c>=k.medCov&&n>=k.medN)return['Medium','var(--gold)'];
   return['Low','var(--short)'];}
 function kpiCard(label,value,sub,accent){return '<div class="kpi"><span class="kpi-bar" style="background:'+
   (accent||'var(--hair-strong)')+'"></span><div class="kpi-label">'+label+'</div><div class="kpi-value">'+
@@ -227,7 +237,7 @@ function renderKpis(d){
   const m=d.market,s=d.signals,cov=d.coverage, fa=m.funding_hourly*24*365, asym=s.asymmetry;
   const bias=asym>0?'short side · upside-squeeze fuel':'long side · downside-flush fuel';
   const biasC=asym>0?'var(--short)':'var(--long)';
-  const regC={calm:'var(--long)',elevated:'var(--gold)',fragile:'var(--short)'}[s.regime];
+  const regC=POLICY.regimeColors[s.regime];
   const cf=confidence(d), w5=s.near_band_usd['0.05'].total, w2=s.near_band_usd['0.02'].total;
   document.getElementById('kpis').innerHTML=[
     kpiCard('BTC mark','$'+num(m.mark_px),'oracle $'+num(m.oracle_px)),
@@ -268,7 +278,7 @@ function renderGauge(d){
   const tr={type:'indicator',mode:'gauge+number',value:cfi,number:{font:{size:40,color:FONT,family:MONO},suffix:'/100'},
     gauge:{axis:{range:[0,100],tickcolor:MUTED,tickfont:{color:MUTED,size:10}},bar:{color:FONT,thickness:0.22},
       bgcolor:'rgba(0,0,0,0)',borderwidth:0,
-      steps:[{range:[0,25],color:'rgba(63,185,140,0.30)'},{range:[25,50],color:'rgba(232,161,58,0.30)'},{range:[50,100],color:'rgba(229,86,78,0.32)'}],
+      steps:[{range:[0,POLICY.calm],color:'rgba(63,185,140,0.30)'},{range:[POLICY.calm,POLICY.elev],color:'rgba(232,161,58,0.30)'},{range:[POLICY.elev,100],color:'rgba(229,86,78,0.32)'}],
       threshold:{line:{color:GOLD,width:4},value:cfi}}};
   Plotly.react('gauge',[tr],{paper_bgcolor:'rgba(0,0,0,0)',font:{color:FONT,family:MONO},margin:{l:26,r:26,t:18,b:6},height:250},CFG);
 }
@@ -279,9 +289,9 @@ function renderHistory(d){
   lay.height=250; lay.margin={l:50,r:20,t:42,b:34};
   lay.yaxis=Object.assign(lay.yaxis,{range:[0,100],title:{text:'CFI',font:{color:MUTED,size:11}}});
   lay.xaxis=Object.assign(lay.xaxis,{title:'',type:'date'});
-  lay.shapes=[{type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:0,y1:25,fillcolor:LONG,opacity:0.07,line:{width:0}},
-              {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:25,y1:50,fillcolor:GOLD,opacity:0.07,line:{width:0}},
-              {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:50,y1:100,fillcolor:SHORT,opacity:0.07,line:{width:0}}];
+  lay.shapes=[{type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:0,y1:POLICY.calm,fillcolor:LONG,opacity:0.07,line:{width:0}},
+              {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:POLICY.calm,y1:POLICY.elev,fillcolor:GOLD,opacity:0.07,line:{width:0}},
+              {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:POLICY.elev,y1:100,fillcolor:SHORT,opacity:0.07,line:{width:0}}];
   const tr={x:x,y:y,type:'scatter',mode:'lines+markers',line:{color:GOLD,width:2,shape:'spline',smoothing:0.4},
     marker:{size:5,color:GOLD},fill:'tozeroy',fillcolor:'rgba(232,161,58,0.07)',
     hovertemplate:'%{x|%b %d %H:%M}<br>CFI %{y:.1f}<extra></extra>'};
@@ -334,16 +344,19 @@ function showView(v){ VIEW=v;
   Plotly.Plots.resize(v==='heatmap'?'heatmap':'ladder');
 }
 
-async function poll(){
-  try{
-    const r=await fetch('./data.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok)return;
-    const j=await r.json();
-    if(j && j.generated_at!==window.__DATA__.generated_at){
-      window.__DATA__=j; renderAll(j);
-      const f=document.getElementById('freshness'); if(f){f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');}
-    }
-  }catch(e){}
+// Fetch the latest data.json; if it's a newer snapshot, re-render in place + flash.
+// Returns the parsed payload (or null), so callers can act on whether it changed.
+async function refreshFromServer(){
+  const r=await fetch('./data.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok)return null;
+  const j=await r.json();
+  if(j && j.generated_at!==window.__DATA__.generated_at){
+    window.__DATA__=j; renderAll(j);
+    const f=document.getElementById('freshness'); if(f){f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');}
+  }
+  return j;
 }
+
+async function poll(){ try{ await refreshFromServer(); }catch(e){} }
 
 // Manual "↻" button. By default it force-refreshes to the freshest committed
 // point and polls aggressively for ~3 min to catch a brand-new one the moment it lands.
@@ -354,16 +367,12 @@ async function manualUpdate(){
   const btn=document.getElementById('update-btn'); if(!btn)return;
   btn.disabled=true; const orig=btn.textContent; btn.textContent='↻ updating…';
   const startGen=window.__DATA__.generated_at, t0=Date.now();
+  const stop=()=>{ clearInterval(iv); btn.disabled=false; btn.textContent=orig; };
   if(DISPATCH_URL){ try{ await fetch(DISPATCH_URL,{method:'POST',mode:'cors'}); }catch(e){} }
   const iv=setInterval(async()=>{
-    try{
-      const r=await fetch('./data.json?t='+Date.now(),{cache:'no-store'}); const j=await r.json();
-      if(j && j.generated_at!==window.__DATA__.generated_at){
-        window.__DATA__=j; renderAll(j);
-        const f=document.getElementById('freshness'); if(f){f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');}
-      }
-      if((j && j.generated_at!==startGen) || Date.now()-t0>180000){ clearInterval(iv); btn.disabled=false; btn.textContent=orig; }
-    }catch(e){ if(Date.now()-t0>180000){ clearInterval(iv); btn.disabled=false; btn.textContent=orig; } }
+    try{ const j=await refreshFromServer();
+      if((j && j.generated_at!==startGen) || Date.now()-t0>180000) stop();
+    }catch(e){ if(Date.now()-t0>180000) stop(); }
   },4000);
 }
 
@@ -378,8 +387,7 @@ setInterval(setFresh,20000);
 # --------------------------------------------------------------- HTML assembly
 def _hero(snapshot: dict[str, Any]) -> str:
     regime = snapshot["signals"]["regime"]
-    regime_color = {"calm": "var(--long)", "elevated": "var(--gold)",
-                    "fragile": "var(--short)"}[regime]
+    regime_color = REGIME_COLORS[regime]
     conf, conf_color = _confidence(snapshot)
     return f"""
 <header class="reveal" style="animation-delay:.02s">
@@ -438,7 +446,7 @@ def _kpis_initial(snapshot: dict[str, Any]) -> str:
     asym = sig["asymmetry"]
     bias = "short side · upside-squeeze fuel" if asym > 0 else "long side · downside-flush fuel"
     bias_c = "var(--short)" if asym > 0 else "var(--long)"
-    reg_c = {"calm": "var(--long)", "elevated": "var(--gold)", "fragile": "var(--short)"}[sig["regime"]]
+    reg_c = REGIME_COLORS[sig["regime"]]
     conf, conf_c = _confidence(snapshot)
     w5 = sig["near_band_usd"]["0.05"]["total"]
     w2 = sig["near_band_usd"]["0.02"]["total"]
@@ -549,8 +557,9 @@ endpoint, a PoC stand-in for production fills-WebSocket discovery.</p></div>
 <strong>CFI</strong> = 100 · Σ N·K(d) / Σ N (notional-weighted average proximity; smooth kernel so
 a dust position on the mark can’t blow it up). <strong>Asymmetry</strong> = (short_pressure −
 long_pressure) / (sum). The Fig.01 curve is gaussian-smoothed for legibility (area ∝ notional);
-hover reports real notional within ±1.25%. Regime bands (calm &lt; 25, elevated &lt; 50, else
-fragile) are illustrative pending calibration on the accumulating history.</p>
+hover reports real notional within ±1.25%. Regime bands (calm &lt; {int(REGIME_BANDS['calm_max'])},
+elevated &lt; {int(REGIME_BANDS['elevated_max'])}, else fragile) are illustrative pending
+calibration on the accumulating history.</p>
 
   <div class="sec-head" style="margin-top:38px"><span class="sec-num">07</span><h2>Wallet Universe, Coverage &amp; Path to Production</h2></div>
 <h3>How the sample is built (current PoC)</h3>
@@ -624,7 +633,12 @@ def render_html(payload: dict[str, Any], snapshot: dict[str, Any]) -> str:
             + _charts()
             + _memo(snapshot)
             + "</div>")
-    tail = ("<script>window.__DATA__=" + json.dumps(payload) + ";</script>"
+    cfg = {"calm": REGIME_BANDS["calm_max"], "elev": REGIME_BANDS["elevated_max"],
+           "regimeColors": REGIME_COLORS,
+           "conf": {"highCov": CONF_HIGH[0], "highN": CONF_HIGH[1],
+                    "medCov": CONF_MED[0], "medN": CONF_MED[1]}}
+    tail = ("<script>window.__CFG__=" + json.dumps(cfg)
+            + ";window.__DATA__=" + json.dumps(payload) + ";</script>"
             + "<script>" + _JS + "</script></body></html>")
     return head + body + tail
 

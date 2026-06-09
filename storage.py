@@ -107,32 +107,43 @@ def append_ledger(m: LiquidationMap, path: str = LEDGER_JSONL) -> None:
         f.write(json.dumps(m.summary()) + "\n")
 
 
+def iter_json_lines(src: Any) -> list[dict]:
+    """Parse JSONL from any iterable of strings, skipping blank/corrupt lines.
+
+    One definition of "read append-only JSONL tolerantly", shared by the ledger, the
+    map history, and rebuild_history's git-replay — so the skip-corrupt rule can't drift.
+    """
+    out: list[dict] = []
+    for line in src:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
+
+
+def _dedup_by_timestamp(df: pd.DataFrame, keep: str = "last") -> pd.DataFrame:
+    """Canonical history ordering: one row per timestamp, time-sorted, fresh index."""
+    return (df.drop_duplicates("timestamp", keep=keep)
+              .sort_values("timestamp").reset_index(drop=True))
+
+
 def load_ledger(path: str = LEDGER_JSONL) -> pd.DataFrame:
     """Read the ledger, skipping any corrupt line (a damaged line never loses the rest)."""
     if not os.path.exists(path):
         return pd.DataFrame()
-    rows = []
     with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    if not rows:
-        return pd.DataFrame()
-    return (pd.DataFrame(rows)
-            .drop_duplicates("timestamp", keep="last")
-            .sort_values("timestamp").reset_index(drop=True))
+        rows = iter_json_lines(f)
+    return _dedup_by_timestamp(pd.DataFrame(rows)) if rows else pd.DataFrame()
 
 
 def _persist_history(df: pd.DataFrame, csv: str = METRICS_CSV,
                      jsonl: str = LEDGER_JSONL) -> pd.DataFrame:
     """Atomically write the deduped/sorted history to BOTH the CSV view and the ledger."""
-    df = (df.drop_duplicates("timestamp", keep="last")
-            .sort_values("timestamp").reset_index(drop=True))
+    df = _dedup_by_timestamp(df)
     _atomic_write(csv, df.to_csv(index=False))
     lines = "".join(
         json.dumps({k: (None if pd.isna(v) else v) for k, v in rec.items()}) + "\n"
@@ -170,6 +181,21 @@ def load_metrics_history(path: str = METRICS_CSV) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+def compact_histogram(rows: Any) -> list[list[float]]:
+    """The compact map-history bucket form: non-zero [price, long, short], rounded.
+
+    One definition of the serialization shape, shared by append_map_history and the
+    git-replay in rebuild_history (which reads it back from committed snapshots).
+    `rows` is any iterable of mappings with price_mid / long_notional / short_notional.
+    """
+    return [
+        [round(float(r["price_mid"]), 1), round(float(r["long_notional"])),
+         round(float(r["short_notional"]))]
+        for r in rows
+        if r["long_notional"] > 0 or r["short_notional"] > 0
+    ]
+
+
 def append_map_history(m: LiquidationMap, path: str = MAP_HISTORY_JSONL) -> None:
     """Append this snapshot's (compact) liquidation histogram for the time-heatmap.
 
@@ -179,12 +205,8 @@ def append_map_history(m: LiquidationMap, path: str = MAP_HISTORY_JSONL) -> None
     construction (and git history is a second copy).
     """
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    buckets = [
-        [round(float(r.price_mid), 1), round(float(r.long_notional)), round(float(r.short_notional))]
-        for r in m.histogram.itertuples()
-        if r.long_notional > 0 or r.short_notional > 0
-    ]
-    rec = {"timestamp": m.timestamp, "mark": m.market.mark_px, "b": buckets}
+    rec = {"timestamp": m.timestamp, "mark": m.market.mark_px,
+           "b": compact_histogram(m.histogram.to_dict("records"))}
     with open(path, "a") as f:
         f.write(json.dumps(rec) + "\n")
 
@@ -193,18 +215,8 @@ def load_map_history(path: str = MAP_HISTORY_JSONL) -> list[dict[str, Any]]:
     """Load per-snapshot histograms, de-duped by timestamp (keep last), time-sorted."""
     if not os.path.exists(path):
         return []
-    seen: dict[str, dict] = {}
     with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                d = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if "timestamp" in d:
-                seen[d["timestamp"]] = d
+        seen = {d["timestamp"]: d for d in iter_json_lines(f) if "timestamp" in d}
     return [seen[k] for k in sorted(seen)]
 
 
@@ -242,37 +254,48 @@ CREATE TABLE IF NOT EXISTS liq_map_histogram (
 """
 
 
-def write_sqlite(m: LiquidationMap, path: str = SQLITE_DB) -> None:
-    """Upsert the snapshot header + histogram rows into the relational mirror."""
+_SNAPSHOT_COLS = [
+    "timestamp", "coin", "mark_px", "oracle_px", "funding_hourly", "oi_usd",
+    "cfi", "regime", "asymmetry", "liq_within_2pct_usd", "liq_within_5pct_usd",
+    "liq_within_10pct_usd", "n_wallets", "n_positions", "sampled_notional_usd",
+    "coverage_ratio", "n_null_liqpx", "n_dust_filtered", "n_far_filtered",
+]
+
+
+def write_sqlite_from_snapshot(snap: dict[str, Any], path: str = SQLITE_DB) -> None:
+    """Upsert the snapshot header + histogram rows into the relational mirror.
+
+    Keyed on the snapshot dict (summary_row + histogram records) so a single code path
+    serves both the in-process pipeline and the Airflow `load` task — which only has the
+    re-read JSON — without forking the column list or the SQL.
+    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    s, ts = snap["summary_row"], snap["summary_row"]["timestamp"]
     conn = sqlite3.connect(path)
     try:
         conn.executescript(SCHEMA_SQL)
-        s = m.summary()
-        cols = ["timestamp", "coin", "mark_px", "oracle_px", "funding_hourly", "oi_usd",
-                "cfi", "regime", "asymmetry", "liq_within_2pct_usd", "liq_within_5pct_usd",
-                "liq_within_10pct_usd", "n_wallets", "n_positions", "sampled_notional_usd",
-                "coverage_ratio", "n_null_liqpx", "n_dust_filtered", "n_far_filtered"]
         conn.execute(
-            f"INSERT OR REPLACE INTO liq_map_snapshot ({','.join(cols)}) "
-            f"VALUES ({','.join('?' for _ in cols)})",
-            [s[c] for c in cols],
+            f"INSERT OR REPLACE INTO liq_map_snapshot ({','.join(_SNAPSHOT_COLS)}) "
+            f"VALUES ({','.join('?' for _ in _SNAPSHOT_COLS)})",
+            [s[c] for c in _SNAPSHOT_COLS],
         )
-        conn.execute("DELETE FROM liq_map_histogram WHERE timestamp = ?", (m.timestamp,))
+        conn.execute("DELETE FROM liq_map_histogram WHERE timestamp = ?", (ts,))
         conn.executemany(
             "INSERT INTO liq_map_histogram "
             "(timestamp, price_mid, distance_pct, long_notional, short_notional) "
             "VALUES (?,?,?,?,?)",
-            [
-                (m.timestamp, float(r.price_mid), float(r.distance_pct),
-                 float(r.long_notional), float(r.short_notional))
-                for r in m.histogram.itertuples()
-                if r.long_notional > 0 or r.short_notional > 0
-            ],
+            [(ts, h["price_mid"], h["distance_pct"], h["long_notional"], h["short_notional"])
+             for h in snap["histogram"]
+             if h["long_notional"] > 0 or h["short_notional"] > 0],
         )
         conn.commit()
     finally:
         conn.close()
+
+
+def write_sqlite(m: LiquidationMap, path: str = SQLITE_DB) -> None:
+    """Upsert one LiquidationMap into the relational mirror (delegates to the dict writer)."""
+    write_sqlite_from_snapshot(map_to_dict(m), path)
 
 
 def persist_all(m: LiquidationMap) -> None:

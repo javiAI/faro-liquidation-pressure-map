@@ -14,6 +14,7 @@ lives on a different host and does not count against this budget.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import threading
 import time
@@ -50,6 +51,14 @@ class MarketContext:
     @property
     def open_interest_usd(self) -> float:
         return self.open_interest_coin * self.mark_px
+
+    def to_dict(self) -> dict[str, Any]:
+        """Explicit serialization contract (e.g. for Airflow XCom), not reliance on __dict__."""
+        return dataclasses.asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "MarketContext":
+        return cls(**d)
 
 
 class _TokenBucket:
