@@ -81,7 +81,7 @@ def _kpi(label: str, value: str, sub: str = "", accent: str = "") -> str:
 CONSISTENT_MIN_WALLETS = 1000   # history/heatmap only show the comparable-coverage era
 
 
-def consistent_cutoff(history: pd.DataFrame, min_wallets: int = CONSISTENT_MIN_WALLETS):
+def consistent_cutoff(history: pd.DataFrame, min_wallets: int = CONSISTENT_MIN_WALLETS) -> str | None:
     """First timestamp at which the wallet universe reached the current (large) size.
 
     We bumped the universe from a few hundred to ~2,000 wallets mid-flight; points from
@@ -113,8 +113,9 @@ def build_payload(snapshot: dict[str, Any], history: pd.DataFrame,
     hist = []
     if not history.empty:
         has_asym = "asymmetry" in history.columns
+        has_price = "mark_px" in history.columns
         for r in history.sort_values("timestamp").itertuples():
-            price = float(r.mark_px) if "mark_px" in history.columns else None
+            price = float(r.mark_px) if has_price else None
             asym = float(r.asymmetry) if (has_asym and pd.notna(r.asymmetry)) else None
             hist.append({"t": r.timestamp, "cfi": float(r.cfi), "price": price,
                          "asym": asym})
@@ -357,6 +358,9 @@ function money(x){const a=Math.abs(x);
   if(a>=1e9)return '$'+(x/1e9).toFixed(2)+'B'; if(a>=1e6)return '$'+(x/1e6).toFixed(2)+'M';
   if(a>=1e3)return '$'+(x/1e3).toFixed(2)+'k'; return '$'+Math.round(x).toLocaleString();}
 function num(x){return Math.round(x).toLocaleString();}
+// default price-axis window: open at the mark ±30% (the zone that matters); the data runs
+// to ±60% (same as the keep filter) so you can pan / zoom out to the rest.
+function markRange(px){return [px*0.70, px*1.30];}
 function baseLayout(title){return {
   title:{text:title, font:{size:14,color:FONT,family:MONO}, x:0.01}, autosize:true,
   paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
@@ -383,7 +387,7 @@ function renderKpis(d){
   const bias=asym>0?'shorts more exposed · squeeze-up fuel':'longs more exposed · flush-down fuel';
   const biasC=asym>0?'var(--short)':'var(--long)';
   const regC=POLICY.regimeColors[s.regime];
-  const cf=confidence(d), k=POLICY.conf;
+  const cf=confidence(d);
   const w5=s.near_band_usd['0.05'].total, w2=s.near_band_usd['0.02'].total;
   const covPct=cov.coverage_ratio*100;
   document.getElementById('kpis').innerHTML=[
@@ -432,7 +436,7 @@ function renderLadder(d){
   lay.margin={l:78,r:66,t:22,b:56}; lay.hovermode='y unified'; if(bars) lay.barmode='overlay';
   lay.xaxis=Object.assign(lay.xaxis,{title:{text:bars?'Liquidable notional per price level (USD)':'Liquidable notional density (smoothed) — area ∝ notional',font:{color:MUTED,size:11}},tickprefix:'$',tickformat:'~s',rangemode:'tozero',zeroline:false});
   lay.yaxis=Object.assign(lay.yaxis,{title:{text:'Liquidation price (USD)',font:{color:MUTED,size:11}},tickprefix:'$',tickformat:',.0f',showgrid:false,
-     range:[mark*0.70,mark*1.30],   // open at mark ±30% (the zone that matters); data runs to ±60% — pan/zoom out to see it
+     range:markRange(mark),   // open at mark ±30% (the zone that matters); data runs to ±60% — pan/zoom out
      showspikes:true,spikemode:'across',spikethickness:1,spikecolor:GOLD,spikedash:'dot',spikesnap:'cursor'});
   lay.shapes=[{type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:mark*0.95,y1:mark*1.05,fillcolor:GOLD,opacity:0.05,line:{width:0}},
               {type:'line',xref:'paper',x0:0,x1:1,yref:'y',y0:mark,y1:mark,line:{color:GOLD,width:1.3,dash:'dot'}}];
@@ -514,7 +518,7 @@ function renderHeatmap(d){
   lay.margin={l:78,r:34,t:22,b:56};
   lay.yaxis=Object.assign(lay.yaxis,{title:{text:'Price (USD)',font:{color:MUTED,size:11}},tickprefix:'$',tickformat:',.0f'});
   const mk=d.market&&d.market.mark_px;
-  if(mk) lay.yaxis.range=[mk*0.70,mk*1.30];   // open at the latest mark ±30%; data runs to ±60% — pan/zoom out
+  if(mk) lay.yaxis.range=markRange(mk);   // open at the latest mark ±30%; data runs to ±60% — pan/zoom out
   lay.xaxis=Object.assign(lay.xaxis,{title:{text:'Time (UTC, '+per+')',font:{color:MUTED,size:11}},type:'date'});
   if(hm.x.length>1) lay.xaxis.range=[hm.x[0],hm.x[hm.x.length-1]];  // data reaches the right edge (mark too)
   Plotly.react('heatmap',[heat,markline],lay,CFG);
@@ -1131,7 +1135,7 @@ cluster, coverage) so the AI can cite it — and hedge or refuse when coverage i
 <p>Data quality is the part that has to be right, so here is the current run in full:</p>
 <table>
 <tr><th>Check</th><th>Value</th><th>How it is handled</th></tr>
-<tr><td>Freshness</td><td><span id="fresh-cell">live</span></td><td>stale &gt; 2 cadences → alert + banner</td></tr>
+<tr><td>Freshness</td><td>live · auto-checked</td><td>stale &gt; 2 cadences → alert + banner</td></tr>
 <tr><td>Coverage vs OI</td><td><span id="q-cov">{cov['coverage_ratio']:.1%}</span></td><td>reported as an explicit bound, never hidden</td></tr>
 <tr><td>Positions / wallets</td><td><span id="q-pos">{int(cov['n_btc_positions'])} / {int(cov['n_wallets_queried'])}</span></td><td>thin sample → confidence downgraded</td></tr>
 <tr><td>liquidationPx = null</td><td><span id="q-null">{q['n_null_liqpx']} dropped</span></td><td>cross-margin; not placeable per position</td></tr>

@@ -6,8 +6,10 @@
 > structure right now.
 
 **Live demo:** https://javiai.github.io/faro-liquidation-pressure-map/
-**Single-page deliverable:** [`site/index.html`](site/index.html) — the memo (4 sections
-+ appendices) **and** the live, auto-updating charts in one file.
+**Single-page deliverable:** the memo (4 sections + appendices) **and** the live,
+auto-updating charts in one self-contained file — served at the link above, and committed
+as [`docs/index.html`](docs/index.html) (what GitHub Pages serves). Running the pipeline
+locally also writes a working copy to `site/index.html`.
 
 ---
 
@@ -71,7 +73,8 @@ src/liqmap/            the package — all pipeline logic
   paths.py             repo-root-relative data/ · site/ · docs/ resolution
 dags/                  Airflow DAG (proof-of-concept)
 tests/                 pytest: metric maths, filters, loss-resistant storage
-data/ · site/ · docs/  accumulating history · working render · what Pages serves
+data/                  accumulating history (committed) · docs/  committed, Pages-served page
+                       (site/ is the local build output of build_site — gitignored)
 pyproject.toml         packaging (makes `liqmap` importable) + pytest config
 .github/workflows/     cron runner + Pages deploy
 ```
