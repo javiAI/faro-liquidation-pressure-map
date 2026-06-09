@@ -66,7 +66,6 @@ src/liqmap/            the package — all pipeline logic
   storage.py           output layer: JSON snapshot, CSV history, append-only ledger, SQLite
   heatmap.py           rebuilds the time × price heatmap from the per-run histograms
   build_site.py        assembles the single deliverable site/index.html (+ data.json)
-  viz.py               static memo PNG (best-effort; the live page uses interactive charts)
   run_pipeline.py      thin end-to-end runner (extract → … → render)
   validate_api.py      live API + schema check (handy to run first)
   rebuild_history.py   reconstruct the CFI / heatmap history from git snapshots

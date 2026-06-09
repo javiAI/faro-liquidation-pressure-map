@@ -30,8 +30,17 @@ import pandas as pd
 from liqmap.heatmap import build_heatmap
 from liqmap.liquidation_map import REGIME_BANDS
 from liqmap.storage import LATEST_SNAPSHOT_JSON, load_map_history, load_metrics_history
-from liqmap.viz import _gaussian_smooth, export_memo_png
 from liqmap.paths import SITE_DIR, DOCS_DIR
+
+
+def _gaussian_smooth(y: np.ndarray, sigma: float = 1.8) -> np.ndarray:
+    """Light gaussian smoothing for a clean density profile (peak positions preserved)."""
+    if len(y) == 0:
+        return y
+    radius = max(1, int(sigma * 3))
+    k = np.exp(-(np.arange(-radius, radius + 1) ** 2) / (2 * sigma ** 2))
+    k /= k.sum()
+    return np.convolve(y, k, mode="same")
 
 # Single source of truth for the regime/confidence visual policy. The thresholds live
 # in liquidation_map.REGIME_BANDS; here we add the colour mapping and confidence cutoffs,
@@ -772,17 +781,13 @@ async function refreshFromServer(){
 
 async function poll(){ try{ await refreshFromServer(); }catch(e){} }
 
-// Manual "↻" button. By default it force-refreshes to the freshest committed
-// point and polls aggressively for ~3 min to catch a brand-new one the moment it lands.
-// Set DISPATCH_URL to a tiny workflow-dispatch proxy (see workers/dispatch-worker.js)
-// to make the button trigger a REAL on-demand extraction.
-const DISPATCH_URL = "";
+// Manual "↻" button. It force-refreshes to the freshest committed point and polls
+// aggressively for ~3 min to catch a brand-new one the moment the pipeline lands it.
 async function manualUpdate(){
   const btn=document.getElementById('update-btn'); if(!btn)return;
   btn.disabled=true; const orig=btn.textContent; btn.textContent='↻ updating…';
   const startGen=window.__DATA__.generated_at, t0=Date.now();
   const stop=()=>{ clearInterval(iv); btn.disabled=false; btn.textContent=orig; };
-  if(DISPATCH_URL){ try{ await fetch(DISPATCH_URL,{method:'POST',mode:'cors'}); }catch(e){} }
   const iv=setInterval(async()=>{
     try{ const j=await refreshFromServer();
       if((j && j.generated_at!==startGen) || Date.now()-t0>180000) stop();
@@ -829,7 +834,7 @@ def _hero(snapshot: dict[str, Any]) -> str:
      <span class="tag">confidence <b id="conf-badge" style="color:{conf_color}">{conf}</b></span>
      <span class="tag fresh"><span class="live-dot"></span><span id="freshness">live</span><button class="info" data-tip="A fresh reading is computed about every 10 minutes (when the pipeline runs). The page quietly checks for a new one every 60 seconds and updates in place — no reload. So &quot;updated 4 min ago&quot; just means the newest reading is 4 minutes old.">?</button></span>
      <span class="tag">new reading <b>~10 min</b></span>
-     <button id="update-btn" class="tag btn" title="Fetch the freshest reading now (a new one is produced ~every 10 min; configure a dispatch endpoint for true on-demand extraction)">↻</button>
+     <button id="update-btn" class="tag btn" title="Fetch the freshest reading now (a new one is produced ~every 10 min)">↻</button>
   </div>
 </header>
 <div class="rule reveal" style="animation-delay:.06s"></div>
@@ -1273,11 +1278,6 @@ def generate_site(snapshot_path: str = LATEST_SNAPSHOT_JSON, out_path: str = OUT
     os.makedirs(os.path.dirname(data_path), exist_ok=True)
     with open(data_path, "w") as f:
         json.dump(payload, f)
-
-    try:
-        export_memo_png(snapshot)  # best-effort static PNG for the memo
-    except Exception as exc:  # noqa: BLE001
-        print(f"[render] PNG export skipped: {exc}")
 
     html = render_html(payload, snapshot)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

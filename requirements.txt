@@ -1,13 +1,11 @@
-# Core pipeline dependencies (kept intentionally small and boring).
-requests>=2.31
-pandas>=2.0
-plotly>=5.20
-kaleido            # static PNG export for the memo figure (optional; site degrades gracefully)
+# Core pipeline dependencies — intentionally tiny.
+requests>=2.31      # Hyperliquid public API client
+pandas>=2.0         # the metric, histogram, and the CSV/ledger history
 
-# Storage is JSON + CSV + a SQLite mirror — deliberately git-friendly so the live
-# demo can persist its accumulating history straight in the repo. No warehouse/
-# parquet dependency is needed for the PoC.
+# That's it. Charts render in the browser from Plotly's CDN (no server-side plotly/kaleido).
+# Storage is JSON + CSV + a SQLite mirror — git-friendly, so the live demo persists its
+# accumulating history straight in the repo (no warehouse/parquet dependency).
 #
-# Airflow is NOT pinned here on purpose: the DAG is a proof-of-concept artifact
-# meant to be read/dropped into an existing Airflow deployment. The live demo is
-# driven by GitHub Actions calling run_pipeline.py, which only needs the above.
+# Airflow is NOT pinned here on purpose: the DAG is a proof-of-concept artifact meant to be
+# dropped into an existing Airflow deployment. The live demo is driven by GitHub Actions
+# calling `python -m liqmap.run_pipeline`, which only needs the two packages above.

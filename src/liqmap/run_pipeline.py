@@ -67,7 +67,7 @@ def run(n_wallets: int = wallets.DEFAULT_N, *, render: bool = True) -> None:
           f"coverage={m.coverage['coverage_ratio']:.1%})")
 
     if render:
-        # imported lazily so the data pipeline never depends on the viz stack
+        # imported lazily so the core pipeline import stays light (render layer only when needed)
         from liqmap.build_site import generate_site, publish_to_docs
         out = generate_site()
         published = publish_to_docs()   # copies index.html + data.json into docs/ (served by Pages)
