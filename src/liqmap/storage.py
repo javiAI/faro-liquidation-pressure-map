@@ -181,6 +181,11 @@ def load_metrics_history(path: str = METRICS_CSV) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+def _nonzero_bucket(r: Any) -> bool:
+    """A price bucket worth persisting: it carries some long or short liquidable notional."""
+    return r["long_notional"] > 0 or r["short_notional"] > 0
+
+
 def compact_histogram(rows: Any) -> list[list[float]]:
     """The compact map-history bucket form: non-zero [price, long, short], rounded.
 
@@ -192,7 +197,7 @@ def compact_histogram(rows: Any) -> list[list[float]]:
         [round(float(r["price_mid"]), 1), round(float(r["long_notional"])),
          round(float(r["short_notional"]))]
         for r in rows
-        if r["long_notional"] > 0 or r["short_notional"] > 0
+        if _nonzero_bucket(r)
     ]
 
 
@@ -286,7 +291,7 @@ def write_sqlite_from_snapshot(snap: dict[str, Any], path: str = SQLITE_DB) -> N
             "VALUES (?,?,?,?,?)",
             [(ts, h["price_mid"], h["distance_pct"], h["long_notional"], h["short_notional"])
              for h in snap["histogram"]
-             if h["long_notional"] > 0 or h["short_notional"] > 0],
+             if _nonzero_bucket(h)],
         )
         conn.commit()
     finally:

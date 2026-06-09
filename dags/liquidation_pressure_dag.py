@@ -163,7 +163,7 @@ def liquidation_pressure_map():
         """
         from liqmap.hl_client import MarketContext
         from liqmap.liquidation_map import MapParams, compute_metrics, validate_map
-        from liqmap.storage import append_metrics_history, write_latest_snapshot
+        from liqmap.storage import append_map_history, append_metrics_history, write_latest_snapshot
 
         mkt = MarketContext.from_dict(market)
         m = compute_metrics(positions, mkt, n_wallets, MapParams(coin=COIN))
@@ -172,8 +172,11 @@ def liquidation_pressure_map():
         for warning in validate_map(m):
             print(f"[ALERT] {warning}")
 
+        # write the full derived layer — same artifacts as the live runner's persist_all:
+        # snapshot + CFI history + the per-snapshot histogram that feeds the heatmap.
         write_latest_snapshot(m)
         append_metrics_history(m)
+        append_map_history(m)
         return m.summary()
 
     @task
@@ -185,7 +188,7 @@ def liquidation_pressure_map():
         """
         import json
         from liqmap.storage import LATEST_SNAPSHOT_JSON, write_sqlite_from_snapshot
-        from liqmap.build_site import generate_site
+        from liqmap.build_site import generate_site, publish_to_docs
 
         # The transform task already wrote the snapshot + history (the derived layer).
         # Here we mirror it into the warehouse table and publish the site, so SQLite
@@ -195,6 +198,7 @@ def liquidation_pressure_map():
             snap = json.load(f)
         write_sqlite_from_snapshot(snap)
         out = generate_site()
+        publish_to_docs()   # copy into docs/ (what Pages serves), same as the live runner
         print(f"[load] published {out} · CFI={summary['cfi']} regime={summary['regime']}")
         return out
 

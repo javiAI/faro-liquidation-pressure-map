@@ -49,7 +49,7 @@ def ensure_universe(n: int, max_age_h: float = UNIVERSE_MAX_AGE_H) -> list[str]:
     return cached[:n]   # top-N by activity rank
 
 
-def run(n_wallets: int = 2000, *, render: bool = True) -> None:
+def run(n_wallets: int = wallets.DEFAULT_N, *, render: bool = True) -> None:
     t0 = time.time()
     addresses = ensure_universe(n_wallets)
 
@@ -78,7 +78,7 @@ def run(n_wallets: int = 2000, *, render: bool = True) -> None:
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Run the liquidation-pressure pipeline once.")
-    p.add_argument("--wallets", type=int, default=2000)
+    p.add_argument("--wallets", type=int, default=wallets.DEFAULT_N)
     p.add_argument("--no-render", action="store_true", help="skip HTML site generation")
     args = p.parse_args()
     run(n_wallets=args.wallets, render=not args.no_render)

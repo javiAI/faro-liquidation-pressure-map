@@ -60,9 +60,11 @@ def _money(x: float) -> str:
 def _confidence(snapshot: dict[str, Any]) -> tuple[str, str]:
     cov = snapshot["coverage"]["coverage_ratio"]
     n = snapshot["coverage"]["n_btc_positions"]
-    if cov >= CONF_HIGH[0] and n >= CONF_HIGH[1]:
+    hi_cov, hi_n = CONF_HIGH
+    med_cov, med_n = CONF_MED
+    if cov >= hi_cov and n >= hi_n:
         return "High", "var(--long)"
-    if cov >= CONF_MED[0] and n >= CONF_MED[1]:
+    if cov >= med_cov and n >= med_n:
         return "Medium", "var(--gold)"
     return "Low", "var(--short)"
 
@@ -98,7 +100,7 @@ def build_payload(snapshot: dict[str, Any], history: pd.DataFrame,
     h = pd.DataFrame(snapshot["histogram"]).sort_values("price_mid")
     raw_long = h["long_notional"].to_numpy().astype(float)
     raw_short = h["short_notional"].to_numpy().astype(float)
-    win = np.ones(5)
+    win = np.ones(5)   # 5-bucket boxcar for the hover "≈ notional" read (distinct from the gaussian density)
     ladder = {
         "price": [round(float(x), 1) for x in h["price_mid"]],
         "long": [round(float(x)) for x in _gaussian_smooth(raw_long)],
