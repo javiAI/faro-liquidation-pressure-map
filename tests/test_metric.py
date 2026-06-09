@@ -6,8 +6,8 @@ size, and the cleaning filters drop exactly the junk the real API returns.
 """
 import math
 
-from hl_client import MarketContext
-from liquidation_map import (
+from liqmap.hl_client import MarketContext
+from liqmap.liquidation_map import (
     MapParams, compute_metrics, clean_positions, build_histogram, validate_map,
 )
 

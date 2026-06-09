@@ -19,7 +19,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from liquidation_map import REGIME_BANDS
+from liqmap.liquidation_map import REGIME_BANDS
 
 # ---- palette (warm ink / editorial terminal) -------------------------------
 LONG_COLOR = "#3fb98c"    # emerald  — long liquidations (downside flush fuel)
@@ -31,7 +31,8 @@ MUTED = "#9a8f7d"         # warm taupe
 GRID = "rgba(150,128,92,0.13)"
 MONO = "IBM Plex Mono, ui-monospace, SFMono-Regular, monospace"
 
-OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "site", "assets")
+from liqmap.paths import SITE_DIR
+OUT_DIR = os.path.join(SITE_DIR, "assets")   # repo-root site/assets (robust to the src/ layout)
 
 
 def _gaussian_smooth(y: np.ndarray, sigma: float = 1.8) -> np.ndarray:

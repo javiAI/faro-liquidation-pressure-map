@@ -34,9 +34,9 @@ from typing import Any
 
 import pandas as pd
 
-from hl_client import HyperliquidClient
+from liqmap.hl_client import HyperliquidClient
+from liqmap.paths import DATA_DIR   # repo-root data/ dir (robust to the src/ layout)
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 UNIVERSE_CSV = os.path.join(DATA_DIR, "wallet_universe.csv")
 # A sidecar with the logical build time. We rely on this (not the file mtime) because
 # git checkouts on CI reset mtimes, which would make the universe look forever-fresh

@@ -41,7 +41,9 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install -e . --no-deps      # makes the `liqmap` package importable (deps from requirements.txt)
 
       - name: Update loop (pipeline every ~10 min for ~110 min)
         run: |
@@ -53,7 +55,7 @@ jobs:
           while :; do
             i=$((i+1)); START=$(date +%s)
             echo "::group::iteration $i ($(date -u +%H:%M:%SZ))"
-            python run_pipeline.py --wallets 2000 || echo "pipeline iteration failed, continuing"
+            python -m liqmap.run_pipeline --wallets 2000 || echo "pipeline iteration failed, continuing"
             git add docs/index.html docs/data.json data/metrics_history.csv data/cfi_history.jsonl data/map_history.jsonl data/latest_snapshot.json data/wallet_universe.csv data/wallet_universe_meta.json
             if git diff --staged --quiet; then
               echo "no changes to commit"

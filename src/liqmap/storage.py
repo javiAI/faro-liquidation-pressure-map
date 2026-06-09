@@ -31,9 +31,9 @@ from typing import Any
 
 import pandas as pd
 
-from liquidation_map import LiquidationMap
+from liqmap.liquidation_map import LiquidationMap
+from liqmap.paths import DATA_DIR   # repo-root data/ dir (robust to the src/ layout)
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 LATEST_SNAPSHOT_JSON = os.path.join(DATA_DIR, "latest_snapshot.json")
 METRICS_CSV = os.path.join(DATA_DIR, "metrics_history.csv")
 LEDGER_JSONL = os.path.join(DATA_DIR, "cfi_history.jsonl")  # append-only canonical store

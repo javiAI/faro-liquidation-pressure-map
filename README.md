@@ -37,37 +37,44 @@ would trigger**. From the map we derive:
 ## Architecture
 
 ```
-Hyperliquid public API ──► hl_client.py ──► liquidation_map.py ──► storage.py ──► build_site.py
-   /info  + leaderboard       (retries,        (CFI, asymmetry,     (JSON + CSV +    (single HTML:
-                               rate-limit)       histogram)          SQLite mirror)   memo + charts)
-                                   ▲                                       │
-                              wallets.py                                   ▼
-                        (top ~2,000 by activity)                   site/index.html ──► GitHub Pages
+Hyperliquid public API ──► hl_client ──► liquidation_map ──► storage ──► build_site
+   /info  + leaderboard      (retries,      (CFI, asymmetry,   (JSON + CSV +  (single HTML:
+                              rate-limit)     histogram)        SQLite mirror) memo + charts)
+                                 ▲                                    │
+                              wallets                                 ▼
+                        (top ~2,000 by activity)              site/index.html ──► GitHub Pages
+
+(the modules above live in src/liqmap/; data/, site/ and docs/ stay at the repo root)
 
 Orchestration:
   • dags/liquidation_pressure_dag.py  — Airflow PoC (the artifact to evaluate)
-  • run_pipeline.py + .github/workflows/update.yml — the live runner (loops every ~10 min)
+  • python -m liqmap.run_pipeline + .github/workflows/update.yml — live runner (loops every ~10 min)
 ```
 
 The DAG and the runner call the **same** functions — one implementation of the logic,
 two ways to drive it.
 
-## Files
+## Layout
 
-| File | Role |
-|---|---|
-| `validate_api.py` | Live API + schema check (handy to run first) |
-| `hl_client.py` | API client: retries/backoff, shared token-bucket rate limit, parsing |
-| `wallets.py` | Wallet universe (top-N by recent activity, cached to CSV) |
-| `liquidation_map.py` | The metric: cleaning filters, histogram, CFI, asymmetry |
-| `storage.py` | Output layer: JSON snapshot, CSV history, append-only ledger, SQLite mirror |
-| `heatmap.py` | Rebuilds the time × price heatmap from the per-run histograms |
-| `build_site.py` | Assembles the single deliverable `site/index.html` (+ `data.json`) |
-| `run_pipeline.py` | Thin end-to-end runner (what GitHub Actions calls) |
-| `dags/liquidation_pressure_dag.py` | Airflow DAG (proof-of-concept) |
-| `rebuild_history.py` | Reconstruct the CFI / heatmap history from git snapshots |
-| `tests/` | `pytest` unit tests (metric maths, filters, loss-resistant storage) |
-| `.github/workflows/update.yml` | Cron runner + Pages deploy |
+```
+src/liqmap/            the package — all pipeline logic
+  hl_client.py         API client: retries/backoff, shared token-bucket rate limit, parsing
+  wallets.py           wallet universe (top-N by recent activity, cached to data/)
+  liquidation_map.py   the metric: cleaning filters, histogram, CFI, asymmetry
+  storage.py           output layer: JSON snapshot, CSV history, append-only ledger, SQLite
+  heatmap.py           rebuilds the time × price heatmap from the per-run histograms
+  build_site.py        assembles the single deliverable site/index.html (+ data.json)
+  viz.py               static memo PNG (best-effort; the live page uses interactive charts)
+  run_pipeline.py      thin end-to-end runner (extract → … → render)
+  validate_api.py      live API + schema check (handy to run first)
+  rebuild_history.py   reconstruct the CFI / heatmap history from git snapshots
+  paths.py             repo-root-relative data/ · site/ · docs/ resolution
+dags/                  Airflow DAG (proof-of-concept)
+tests/                 pytest: metric maths, filters, loss-resistant storage
+data/ · site/ · docs/  accumulating history · working render · what Pages serves
+pyproject.toml         packaging (makes `liqmap` importable) + pytest config
+.github/workflows/     cron runner + Pages deploy
+```
 
 ---
 
@@ -76,18 +83,19 @@ two ways to drive it.
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+pip install -e . --no-deps     # makes the `liqmap` package importable
 ```
 
 Everything below runs from a fresh clone. Pick what you want to see.
 
 ### 1. See the deliverable — no network needed
 
-`build_site.py` rebuilds the page from the **last committed snapshot** in `data/`, so you
-can open the exact memo + charts without hitting any API:
+This rebuilds the page from the **last committed snapshot** in `data/`, so you can open the
+exact memo + charts without hitting any API:
 
 ```bash
-python build_site.py        # regenerates site/index.html + site/data.json from data/
-open site/index.html        # (Linux: xdg-open · Windows: start)
+python -m liqmap.build_site   # regenerates site/index.html + site/data.json from data/
+open site/index.html          # (Linux: xdg-open · Windows: start)
 ```
 
 ### 2. Run the tests
@@ -109,26 +117,26 @@ job. The first run downloads the ~30 MB leaderboard once to build the wallet uni
 later runs reuse the cache. A small sample finishes in seconds:
 
 ```bash
-python run_pipeline.py --wallets 200    # try 50 for a faster pass; default is 2000
-open site/index.html                    # the page now reflects the fresh run
+python -m liqmap.run_pipeline --wallets 200   # try 50 for a faster pass; default is 2000
+open site/index.html                          # the page now reflects the fresh run
 ```
 
 It writes `data/latest_snapshot.json`, appends `data/metrics_history.csv` and
 `data/cfi_history.jsonl`, updates `data/warehouse.sqlite`, and regenerates the site.
-Run `python validate_api.py` first if you just want to confirm the API and field schema
-are live.
+Run `python -m liqmap.validate_api` first if you just want to confirm the API and field
+schema are live.
 
 ### 4. Run / inspect the Airflow DAG
 
 The DAG is deliberately thin: each task (`refresh_universe → extract_market_context →
-extract_positions → validate → transform → load`) calls the **same** functions
-`run_pipeline.py` does. So the simplest way to *see* what every task does — extraction,
-validation counts, the CFI/asymmetry transform, the load — is just to run the runner
+extract_positions → validate → transform → load`) calls the **same** functions the runner
+does. So the simplest way to *see* what every task does — extraction, validation counts,
+the CFI/asymmetry transform, the load — is just to run `python -m liqmap.run_pipeline`
 above; the output is exactly what the DAG would produce per task.
 
-To run it inside Airflow, the file is a standard `@dag`/`@task` module: it already adds
-the repo root to `sys.path`, so dropping it into an Airflow deployment's `dags/` folder
-is enough (Airflow is intentionally **not** a pipeline dependency, so the live demo and
+To run it inside Airflow, the file is a standard `@dag`/`@task` module: it puts the repo's
+`src/` on `sys.path` so `import liqmap.*` resolves, so dropping it into an Airflow
+deployment's `dags/` folder is enough (Airflow is intentionally **not** a pipeline dependency, so the live demo and
 the tests stay light). `schedule="*/10 * * * *"` and `catchup=False` are deliberate —
 the metric is not backfillable from the public API (see the DAG docstring and Appendix C
 of the memo). `python dags/liquidation_pressure_dag.py` also imports cleanly if Airflow

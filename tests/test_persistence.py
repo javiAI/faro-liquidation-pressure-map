@@ -6,8 +6,8 @@ never loses the rest. These pin exactly that.
 """
 import pandas as pd
 
-import storage
-from storage import iter_json_lines, _dedup_by_timestamp
+from liqmap import storage
+from liqmap.storage import iter_json_lines, _dedup_by_timestamp
 
 
 class FakeMap:

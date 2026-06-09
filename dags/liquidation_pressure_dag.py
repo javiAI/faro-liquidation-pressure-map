@@ -40,9 +40,9 @@ from datetime import timedelta
 
 import pendulum
 
-# In a real deployment the project would be an installed package; for the PoC we
-# make the sibling modules importable from the DAG file.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# In a real deployment `liqmap` would be an installed package on the Airflow image;
+# for the PoC we put the repo's src/ on the path so `import liqmap.*` resolves.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
 from airflow.decorators import dag, task  # noqa: E402
 from airflow.exceptions import AirflowFailException  # noqa: E402
@@ -97,7 +97,7 @@ def liquidation_pressure_map():
         Decoupling the heavy (~30MB) leaderboard download (daily) from the 10-min map
         run is what keeps the high-frequency loop cheap and within rate limits.
         """
-        from run_pipeline import ensure_universe
+        from liqmap.run_pipeline import ensure_universe
         addresses = ensure_universe(N_WALLETS)
         if not addresses:
             raise AirflowFailException("empty wallet universe")
@@ -106,7 +106,7 @@ def liquidation_pressure_map():
     @task
     def extract_market_context() -> dict:
         """metaAndAssetCtxs → BTC market context (the anchor for all distances)."""
-        from hl_client import HyperliquidClient
+        from liqmap.hl_client import HyperliquidClient
         return HyperliquidClient().get_market_context(COIN).to_dict()
 
     @task
@@ -116,8 +116,8 @@ def liquidation_pressure_map():
         In production the raw positions would land in a staging table / object store
         rather than XCom; for a few hundred small rows XCom is fine for the PoC.
         """
-        from hl_client import HyperliquidClient
-        from liquidation_map import fetch_positions
+        from liqmap.hl_client import HyperliquidClient
+        from liqmap.liquidation_map import fetch_positions
         positions, n_errors = fetch_positions(HyperliquidClient(), addresses, COIN)
         # observability: surface the error rate even when the run succeeds
         err_rate = n_errors / max(len(addresses), 1)
@@ -143,7 +143,7 @@ def liquidation_pressure_map():
             # mark vs oracle should track closely; large drift = data-quality event
             raise AirflowFailException(f"mark/oracle drift {drift:.1%} exceeds 5%")
 
-        from liquidation_map import MIN_POSITIONS  # shared confidence policy
+        from liqmap.liquidation_map import MIN_POSITIONS  # shared confidence policy
         n_with_pos = len(positions)
         n_null = sum(1 for p in positions if p.get("liquidationPx") is None)
         soft_warnings = []
@@ -161,9 +161,9 @@ def liquidation_pressure_map():
         agent/product-facing artifacts. Returns the compact summary row for XCom-level
         observability (so the Airflow UI shows CFI/coverage at a glance).
         """
-        from hl_client import MarketContext
-        from liquidation_map import MapParams, compute_metrics, validate_map
-        from storage import append_metrics_history, write_latest_snapshot
+        from liqmap.hl_client import MarketContext
+        from liqmap.liquidation_map import MapParams, compute_metrics, validate_map
+        from liqmap.storage import append_metrics_history, write_latest_snapshot
 
         mkt = MarketContext.from_dict(market)
         m = compute_metrics(positions, mkt, n_wallets, MapParams(coin=COIN))
@@ -184,8 +184,8 @@ def liquidation_pressure_map():
         concerns are explicit. Reads the snapshot the transform task wrote.
         """
         import json
-        from storage import LATEST_SNAPSHOT_JSON, write_sqlite_from_snapshot
-        from build_site import generate_site
+        from liqmap.storage import LATEST_SNAPSHOT_JSON, write_sqlite_from_snapshot
+        from liqmap.build_site import generate_site
 
         # The transform task already wrote the snapshot + history (the derived layer).
         # Here we mirror it into the warehouse table and publish the site, so SQLite

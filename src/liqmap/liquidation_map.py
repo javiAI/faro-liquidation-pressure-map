@@ -54,7 +54,7 @@ from typing import Any
 
 import pandas as pd
 
-from hl_client import HyperliquidClient, MarketContext
+from liqmap.hl_client import HyperliquidClient, MarketContext
 
 # Regime thresholds — ILLUSTRATIVE, to be calibrated on accumulated history.
 REGIME_BANDS = {"calm_max": 25.0, "elevated_max": 50.0}  # >50 = fragile/red

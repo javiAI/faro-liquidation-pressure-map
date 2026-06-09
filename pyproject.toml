@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "liqmap"
+version = "0.1.0"
+description = "Liquidation Pressure Map & Cascade Fragility Index — Hyperliquid BTC (Faro Head of Data PoC)"
+requires-python = ">=3.10"
+# Runtime dependencies are pinned in requirements.txt (the single source the live
+# runner installs); `pip install -e . --no-deps` just makes the `liqmap` package importable.
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

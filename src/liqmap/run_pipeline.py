@@ -18,10 +18,10 @@ import argparse
 import os
 import time
 
-from hl_client import HyperliquidClient
-from liquidation_map import MapParams, build_liquidation_map, validate_map
-from storage import persist_all
-import wallets
+from liqmap.hl_client import HyperliquidClient
+from liqmap.liquidation_map import MapParams, build_liquidation_map, validate_map
+from liqmap.storage import persist_all
+from liqmap import wallets
 
 UNIVERSE_MAX_AGE_H = 24  # refresh the wallet universe at most once a day
 
@@ -68,7 +68,7 @@ def run(n_wallets: int = 2000, *, render: bool = True) -> None:
 
     if render:
         # imported lazily so the data pipeline never depends on the viz stack
-        from build_site import generate_site, publish_to_docs
+        from liqmap.build_site import generate_site, publish_to_docs
         out = generate_site()
         published = publish_to_docs()   # copies index.html + data.json into docs/ (served by Pages)
         print(f"[render] site -> {out} · published -> {published}")

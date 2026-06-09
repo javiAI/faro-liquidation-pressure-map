@@ -27,10 +27,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from heatmap import build_heatmap
-from liquidation_map import REGIME_BANDS
-from storage import LATEST_SNAPSHOT_JSON, load_map_history, load_metrics_history
-from viz import _gaussian_smooth, export_memo_png
+from liqmap.heatmap import build_heatmap
+from liqmap.liquidation_map import REGIME_BANDS
+from liqmap.storage import LATEST_SNAPSHOT_JSON, load_map_history, load_metrics_history
+from liqmap.viz import _gaussian_smooth, export_memo_png
+from liqmap.paths import SITE_DIR, DOCS_DIR
 
 # Single source of truth for the regime/confidence visual policy. The thresholds live
 # in liquidation_map.REGIME_BANDS; here we add the colour mapping and confidence cutoffs,
@@ -40,11 +41,10 @@ REGIME_COLORS = {"calm": "var(--long)", "elevated": "var(--gold)", "fragile": "v
 CONF_HIGH = (0.30, 40)   # (min coverage_ratio, min positions) → "High"
 CONF_MED = (0.15, 20)    # → "Medium"; else "Low"
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-SITE_DIR = os.path.join(ROOT, "site")
+# SITE_DIR / DOCS_DIR are resolved at the repo root by liqmap.paths (robust to the
+# package living under src/liqmap/), so the page + data are written where Pages serves them.
 OUT_HTML = os.path.join(SITE_DIR, "index.html")
 SITE_DATA = os.path.join(SITE_DIR, "data.json")
-DOCS_DIR = os.path.join(ROOT, "docs")
 DOCS_HTML = os.path.join(DOCS_DIR, "index.html")
 DOCS_DATA = os.path.join(DOCS_DIR, "data.json")
 
