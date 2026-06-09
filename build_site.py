@@ -259,6 +259,16 @@ _CSS = r"""
   .callout { border-left:2px solid var(--gold); background:linear-gradient(90deg,rgba(232,161,58,0.07),transparent); padding:13px 18px; margin:16px 0; border-radius:0 10px 10px 0; }
   .callout.warn { border-left-color:var(--short); background:linear-gradient(90deg,rgba(229,86,78,0.08),transparent); }
   .callout p { margin:0; max-width:none; }
+  .lead { font-size:16.5px; line-height:1.6; color:#d6cbb9; max-width:74ch; margin:0 0 6px; }
+  .callout.reading { border-left-color:var(--long); background:linear-gradient(90deg,rgba(63,185,140,0.08),transparent); }
+  .reading-tag { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--long); margin-bottom:6px; }
+  #reading-line { font-size:14.5px; color:#ded2bf; }
+  .schema { font-family:var(--mono); font-size:12px; line-height:1.6; color:#cdbfa8; background:var(--ink-2);
+    border:1px solid var(--hair); border-radius:9px; padding:13px 15px; margin:12px 0; overflow-x:auto; white-space:pre; }
+  .schema b { color:var(--gold); font-weight:600; }
+  .appx-divider { display:flex; align-items:center; gap:14px; margin:50px 0 8px; }
+  .appx-divider::before, .appx-divider::after { content:""; height:1px; background:var(--hair-strong); flex:1; }
+  .appx-divider span { font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); white-space:nowrap; }
   table { width:100%; border-collapse:collapse; margin:14px 0; font-size:13.5px; }
   th { font-family:var(--mono); text-align:left; color:var(--faint); font-weight:500; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; padding:9px 10px; border-bottom:1px solid var(--hair-strong); }
   td { padding:9px 10px; border-bottom:1px solid var(--hair); color:#cdc3b3; }
@@ -424,6 +434,21 @@ function renderQuality(d){
   setText('foot-live','BTC $'+num(m.mark_px)+' · CFI '+s.cfi.toFixed(1)+' · asymmetry '+(s.asymmetry>=0?'+':'')+s.asymmetry.toFixed(2)+' · coverage '+(cov.coverage_ratio*100).toFixed(1)+'%');
 }
 
+function renderReading(d){
+  const el=document.getElementById('reading-line'); if(!el)return;
+  const s=d.signals,m=d.market,cov=d.coverage,asym=s.asymmetry;
+  const side = asym>0.05 ? 'tilted to the short side — more short positions would be liquidated just above price, which is upside-squeeze fuel'
+            : asym<-0.05 ? 'tilted to the long side — more longs would be liquidated just below price, which is downside-flush fuel'
+            : 'fairly balanced between the two sides';
+  const read = s.regime==='calm' ? 'the fuel sits well away from the price, so a move has to travel before it runs into anything — conditions are structurally orderly'
+            : s.regime==='elevated' ? 'a real amount of fuel is gathering near the price, so it is worth watching for a trigger'
+            : 'large liquidable size is parked within a few percent of the price, where moves turn violent — a place to tighten risk, not add it';
+  el.innerHTML='Right now the Cascade Fragility Index reads <b>'+s.cfi.toFixed(1)+'/100</b> ('+s.regime+
+    '). The book is '+side+', with about <b>'+money(s.near_band_usd['0.05'].total)+'</b> liquidable within 5% of the <b>$'+
+    num(m.mark_px)+'</b> mark. <b>Read:</b> '+read+'. This is built from the <b>'+(cov.coverage_ratio*100).toFixed(0)+
+    '%</b> of open interest we currently see.';
+}
+
 function setFresh(){ if(!GEN)return;
   const mins=Math.max(0,Math.round((Date.now()-GEN.getTime())/60000));
   const label=mins<1?'just now':(mins<60?mins+' min ago':Math.floor(mins/60)+'h '+(mins%60)+'m ago');
@@ -432,7 +457,7 @@ function setFresh(){ if(!GEN)return;
 
 function renderAll(d){
   GEN=new Date(d.generated_at);
-  renderKpis(d); renderLadder(d); renderHeatmap(d); renderGauge(d); renderCfiPrice(d); renderQuality(d); setFresh();
+  renderKpis(d); renderLadder(d); renderHeatmap(d); renderGauge(d); renderCfiPrice(d); renderQuality(d); renderReading(d); setFresh();
   ['gauge','cfiprice',VIEW==='heatmap'?'heatmap':'ladder'].forEach(id=>{
     const el=document.getElementById(id); if(el && el.classList.contains('js-plotly-plot')) Plotly.Plots.resize(el);
   });
@@ -643,147 +668,261 @@ def _kpis_initial(snapshot: dict[str, Any]) -> str:
     ])
 
 
+def _reading(snapshot: dict[str, Any]) -> str:
+    """A plain-English read of the current live snapshot (server first paint; JS keeps it live)."""
+    s, m, cov = snapshot["signals"], snapshot["market"], snapshot["coverage"]
+    w5 = _money(s["near_band_usd"]["0.05"]["total"])
+    asym = s["asymmetry"]
+    if asym > 0.05:
+        side = ("tilted to the short side — more short positions would be liquidated just above "
+                "price, which is upside-squeeze fuel")
+    elif asym < -0.05:
+        side = ("tilted to the long side — more longs would be liquidated just below price, "
+                "which is downside-flush fuel")
+    else:
+        side = "fairly balanced between the two sides"
+    if s["regime"] == "calm":
+        read = ("the fuel sits well away from the price, so a move has to travel before it runs "
+                "into anything — conditions are structurally orderly")
+    elif s["regime"] == "elevated":
+        read = "a real amount of fuel is gathering near the price, so it is worth watching for a trigger"
+    else:
+        read = ("large liquidable size is parked within a few percent of the price, where moves "
+                "turn violent — a place to tighten risk, not add it")
+    return (f"Right now the Cascade Fragility Index reads <b>{s['cfi']:.1f}/100</b> "
+            f"({s['regime']}). The book is {side}, with about <b>{w5}</b> liquidable within 5% of "
+            f"the <b>${m['mark_px']:,.0f}</b> mark. <b>Read:</b> {read}. This is built from the "
+            f"<b>{cov['coverage_ratio']:.0%}</b> of open interest we currently see.")
+
+
 def _memo(snapshot: dict[str, Any]) -> str:
     m, cov, q, prov = (snapshot["market"], snapshot["coverage"],
                        snapshot["quality"], snapshot["provenance"])
     return f"""
 <section class="memo reveal" style="animation-delay:.10s">
+
+<p class="lead">I spent time in Faro the way a BTC perp trader would — watching funding, open
+interest, the liquidation feed. Faro already shows <em>Liquidation Volume</em>: the liquidations
+that have <strong>already fired</strong>. What I kept reaching for and couldn't find was the other
+half of that picture — not what just got liquidated, but <strong>where the leverage that's still
+open would get liquidated next</strong>. That gap is the metric I built, and the live tool above is
+the working version of it.</p>
+
+<div class="callout reading"><div class="reading-tag">▮ current reading · live</div>
+<p id="reading-line">{_reading(snapshot)}</p></div>
+
   <div class="sec-head"><span class="sec-num">01</span><h2>Product &amp; Data Insight</h2></div>
-<p><strong>The metric.</strong> A <strong>Liquidation Pressure Map</strong>: a density map of
-the price levels at which <em>currently-open</em> leveraged BTC positions on Hyperliquid would
-be force-liquidated, split by side (longs liquidate below price, shorts above). From it we
-derive the <strong>Cascade Fragility Index (CFI, 0–100)</strong> — how much liquidable notional
-sits <em>close</em> to the mark — and the <strong>Long/Short Asymmetry (−1…+1)</strong>.</p>
-<div class="callout"><p><strong>The specific gap in Faro.</strong> Faro already surfaces
-<em>Liquidation Volume</em> — liquidations that <strong>already executed</strong> (a
-backward-looking flow). This map is its orthogonal complement: <strong>latent</strong>
-liquidation risk from positions still <strong>open</strong>, located <strong>at the prices</strong>
-where they would trigger. Volume tells you the cascade <em>happened</em>; this tells you the fuel
-is <em>there, at these levels, right now</em>.</p></div>
-<p><strong>Trader question.</strong> “Is risk building beneath the surface, and where are the
-trigger levels?” Which side is more vulnerable to a squeeze; is structure fragile or resilient
-<em>before</em> the move. <strong>Most relevant for</strong> BTC perps intraday-to-swing risk:
-stop placement, squeeze hunting, sizing into crowded structure. <strong>Source:</strong>
-<code>metaAndAssetCtxs</code> (mark/oi/funding) + <code>clearinghouseState</code> per wallet
-(<code>szi</code>, <code>liquidationPx</code>, <code>positionValue</code>); wallet universe from
-the leaderboard feed (PoC), fills-WebSocket discovery in production.</p>
-
-  <div class="sec-head" style="margin-top:38px"><span class="sec-num">02</span><h2>Pipeline — Airflow DAG</h2></div>
-<p>The DAG <code>liquidation_pressure_dag.py</code> runs on a fixed cadence as clear tasks; the
-same functions drive the live runner.</p>
-<table>
-<tr><th>Stage</th><th>Does</th><th>Reliability concern handled</th></tr>
-<tr><td>extract_market_context</td><td>mark / oi / funding</td><td>retry+backoff; anchor for distances</td></tr>
-<tr><td>extract_positions</td><td>clearinghouseState over the universe</td><td>per-wallet errors tolerated &amp; counted</td></tr>
-<tr><td>validate</td><td>schema, range, null/dust, freshness</td><td>bad rows quarantined; thin samples flagged</td></tr>
-<tr><td>transform</td><td>map + CFI + asymmetry</td><td>pure function, unit-testable</td></tr>
-<tr><td>load</td><td>JSON + CSV/JSONL series + SQLite mirror</td><td>append-only, union, idempotent</td></tr>
-</table>
-<p><strong>Backfill</strong>: the map is <em>not</em> backfillable (the API returns only current
-account state), so the CFI series accumulates forward; only wallet selection uses history.</p>
-
-  <div class="sec-head" style="margin-top:38px"><span class="sec-num">03</span><h2>Trader-Facing Read</h2></div>
-<p>Cascades are reflexive: a liquidation pushes price into the next one. The danger is not the
-<em>amount</em> of leverage but <em>how close its triggers sit to price</em> — which is what the
-CFI measures.</p>
+<p>The metric is a <strong>Liquidation Pressure Map</strong> for BTC perpetuals on Hyperliquid: a
+density of the price levels where currently-open leveraged positions would be force-liquidated,
+separated by side. Longs liquidate below the price; shorts liquidate above. On top of the map I
+compute two numbers a trader can actually watch:</p>
 <ul>
-<li><strong style="color:var(--short)">Bullish / squeeze:</strong> asymmetry strongly positive,
-dense short cluster just above price → an upside poke can ignite a squeeze.</li>
-<li><strong style="color:var(--long)">Bearish / flush:</strong> asymmetry negative, dense long
-cluster just below → a downside poke can cascade into a flush.</li>
-<li><strong style="color:var(--gold)">Risk-warning:</strong> CFI in the fragile band = large
-liquidable notional within a few % of price; small moves can turn violent.</li>
+<li><strong>Cascade Fragility Index (CFI, 0–100)</strong> — how much liquidable size sits
+<em>close</em> to the current price. It answers “is risk building beneath the surface?”. Closer and
+bigger means a small move can force liquidations that push price into the next cluster — a cascade.</li>
+<li><strong>Long/Short Asymmetry (−1…+1)</strong> — which side is the fuel. It answers “are we set
+up to squeeze up or flush down?”.</li>
 </ul>
-<p><strong>Not for</strong> price forecasting or timing — clusters can sit unlit and act as
-magnets, not walls; it is a conditional risk geography over a sample. <strong>Pair with</strong>
-funding/OI, spot aggressor flow, and Faro’s realized Liquidation Volume.</p>
+<p>Why this is additive to Faro and not just another dashboard stat: it is the <em>forward</em>
+mirror of the Liquidation Volume Faro already has. Volume is realized flow, backward-looking; this
+is latent risk with a price location, forward-looking. They are orthogonal, and a trader reads them
+together — one says the fuel is sitting there, the other says it ignited.</p>
+<p>It matters most for <strong>BTC perps, intraday to swing</strong>. Concretely it changes where
+you place a stop (don't park it inside a cluster you'll get run into), whether you fade or join a
+move heading toward a cluster, and how you size into crowded structure. <strong>Source data</strong>
+is all public and unauthenticated: <code>metaAndAssetCtxs</code> for the mark price (Hyperliquid's
+liquidation reference), oracle, funding and open interest; <code>clearinghouseState</code> per
+wallet for the signed size, the exchange-computed <code>liquidationPx</code>, and the position
+notional. The honest constraint — and the most interesting data problem here — is that no public
+endpoint returns the whole book, so the map is built from a wallet sample (Appendix C).</p>
 
-  <div class="sec-head" style="margin-top:38px"><span class="sec-num">04</span><h2>Visualization in Faro</h2></div>
+  <div class="sec-head" style="margin-top:40px"><span class="sec-num">02</span><h2>Proof-of-Concept Airflow DAG</h2></div>
+<p>The DAG (<code>liquidation_pressure_dag.py</code>) is deliberately thin orchestration over
+reusable modules. All the real logic — the API client, the metric, the storage layer — lives in
+importable functions; the DAG just sequences them. That keeps everything unit-testable and means
+the same code runs whether Airflow drives it or the lightweight runner that powers the live page
+does. Flow:
+<code>refresh_universe → extract_market_context → extract_positions → validate → transform → load</code>.</p>
+<p><strong>Scheduling cadence.</strong> Every ~10 minutes. Open positions and the mark price move
+continuously, so a stale map misleads; but positions don't turn over second to second and I won't
+hammer a free API, so 10 minutes is the balance between freshness and load. The wallet universe is
+refreshed on a far slower beat — once a day — because re-ranking the leaderboard is a ~30 MB
+download and the set of <em>most active</em> wallets barely changes within a day. The loop sleeps
+adaptively to hold the cadence even as a run takes longer.</p>
+<p><strong>Source extraction.</strong> Two sources, two cadences. The wallet universe comes from
+Hyperliquid's public leaderboard feed (daily). Per run, <code>clearinghouseState</code> is queried
+for every wallet. The <code>/info</code> endpoint is weight-limited to 1,200 weight per minute per
+IP and that call costs 2, so the hard ceiling is 600 calls/min. I run a thread pool behind a shared
+token bucket pinned at ~7.5 req/s (≈75% of the ceiling) — enough headroom that retries and the
+occasional <code>metaAndAssetCtxs</code> (weight 20) never trip the limit. That fetches ~2,000
+wallets in about 4.5 minutes with zero rate-limit errors.</p>
+<p><strong>Data validation.</strong> Two tiers. Hard checks fail the run and quarantine the data:
+a non-positive mark, or mark/oracle drift beyond 5% (a sign something is wrong upstream). Soft
+checks pass the data through but flag it. The per-position cleaning drops three things, each for a
+reason I hit in the real data: <code>liquidationPx = null</code> (cross-margin positions, where the
+trigger depends on the whole account and isn't placeable per position); dust below $10k notional
+(which returns nonsense triggers — I watched a $1 position report a liquidation price of $1.8
+trillion); and anything more than 60% away from the mark (numerically unreliable and irrelevant to
+a near-term cascade). Every count is stored, never hidden.</p>
+<p><strong>Transformation logic.</strong> A pure function, so it's testable and the DAG calls it
+directly: bucket each kept position by its <code>liquidationPx</code>, weight by notional, and take
+the CFI as the notional-weighted average proximity using a smooth kernel <code>K(d)=exp(−d/τ)</code>,
+τ = 8%. I chose the exponential kernel over a raw <code>1/d</code> precisely so a dust position
+sitting on the mark can't send the index to infinity. Full formula in Appendix B.</p>
+<p><strong>Storage and output-table design.</strong> Three artifacts, each matched to its job:</p>
+<div class="schema">liq_map_snapshot    timestamp <b>PK</b>, mark_px, oracle_px, funding_hourly, oi_usd,
+                    cfi, regime, asymmetry, liq_within_2/5/10pct_usd,
+                    n_wallets, n_positions, coverage_ratio,
+                    n_null_liqpx, n_dust_filtered, n_far_filtered      &#8594; one row per run (header)
+liq_map_histogram   (timestamp, price_mid) <b>PK</b>, distance_pct,
+                    long_notional, short_notional                      &#8594; per-price buckets (the map)
+cfi_history.jsonl   append-only ledger, one immutable line per run     &#8594; canonical CFI series</div>
+<p>The choice worth defending is how the series is persisted: <strong>append-only ledger with union
+semantics and atomic writes</strong>, never a read-modify-write. Each run appends an immutable line
+first, then rebuilds the CSV view as the union of (ledger ∪ existing CSV ∪ new row). A stale or
+empty read can therefore <em>add</em> a point but can never <em>drop</em> one — which is exactly the
+failure mode you fear in a long-running accumulator. In production these become warehouse tables;
+the shapes are identical.</p>
+<p><strong>Failure handling and observability.</strong> Tasks retry with exponential backoff.
+Per-wallet errors are tolerated and counted rather than failing the whole map — a map missing three
+wallets out of two thousand beats no map — and the run only hard-fails if the wallet error rate
+clears 50%. Alerts fire on staleness beyond two cadences, a collapse in coverage, or an error-rate
+spike. Crucially, every published reading carries its own provenance, freshness, coverage and a
+confidence label, so a downstream consumer — or an AI agent — can downgrade or refuse rather than
+quote a number it can't stand behind.</p>
+<p><strong>Backfill.</strong> The honest limitation, stated up front: the map is <em>not</em>
+backfillable from the public API, because <code>clearinghouseState</code> only returns each
+account's <em>current</em> state — there is no “state as of last Tuesday”. So the CFI series
+accumulates forward from first deploy, and only wallet <em>selection</em> uses history. The real
+backfill path (event-sourcing the open-position book from the fills feed) is in Appendix C. I'd
+rather show I know precisely why the shortcut is a shortcut than dress a snapshot up as history.</p>
+
+  <div class="sec-head" style="margin-top:40px"><span class="sec-num">03</span><h2>Trader-Facing Explanation</h2></div>
+<p>Strip out the engineering and here is the trade. Liquidation cascades are reflexive: a forced
+sell pushes price lower, which trips the next forced sell. What makes a market dangerous isn't
+<em>how much</em> leverage is on — it's <em>how close the triggers sit to the current price</em>.
+The CFI measures that, so it rises before a fragile move rather than after it.</p>
+<p>How to read it:</p>
 <ul>
-<li><strong>Chart:</strong> the density ladder (long vs short, mark line, ±5% band) with a hover
-crosshair, a toggle to the time × price heatmap, plus a CFI gauge and regime-banded history.</li>
-<li><strong>Overlays:</strong> mark/oracle, funding sign, OI; optionally Faro’s realized
-Liquidation Volume on the same price axis (fuel → ignition).</li>
-<li><strong>Placement:</strong> the BTC perp / derivatives page, positioning &amp; risk tab; and an
-agent-readable signal (regime + asymmetry + nearest cluster) with a confidence level.</li>
+<li><strong style="color:var(--short)">Squeeze setup (bullish fuel)</strong> — asymmetry well
+positive with a fat short cluster just above price. The shorts are the fuel; a poke higher can
+light them and run price up into the cluster.</li>
+<li><strong style="color:var(--long)">Flush risk (bearish fuel)</strong> — asymmetry negative with
+longs stacked just below. A poke lower can cascade into a long flush.</li>
+<li><strong style="color:var(--gold)">Risk warning</strong> — CFI in the red band: large size is
+parked within a few percent of price on at least one side. This is when you tighten risk, not when
+you add.</li>
+<li><strong style="color:var(--long)">Calm</strong> — CFI low: the fuel is far away, so a move has
+to travel before it finds any, and moves tend to stay orderly.</li>
 </ul>
+<p><strong>What it is not.</strong> Not a forecast and not a timing trigger. Clusters can sit unlit
+for days, and the levels behave more like magnets than walls — price often drifts <em>toward</em> a
+big cluster before anything happens. Read it as a map of where the market is structurally fragile,
+not as a buy or sell signal. And it is a sample of the book, not the whole thing.</p>
+<p><strong>Pair it with, before you act:</strong> funding and OI (is the exposed side actually
+crowded, and paying to stay on?), spot aggressor flow / CVD (is anyone really pushing toward the
+cluster?), and — the natural pairing inside Faro — the realized Liquidation Volume, to confirm
+whether the latent fuel you're watching actually ignited.</p>
 
-  <div class="sec-head" style="margin-top:38px"><span class="sec-num">05</span><h2>Data Quality, Freshness &amp; Reconciliation</h2></div>
+  <div class="sec-head" style="margin-top:40px"><span class="sec-num">04</span><h2>Visualization Recommendation</h2></div>
+<p>How I'd put it in front of a trader (the live charts above are the working mock):</p>
+<ul>
+<li><strong>Primary — the density ladder.</strong> Liquidable notional by price level: longs below
+the mark in teal, shorts above in red, with the mark line and a ±5% band. A smoothed density by
+default (clean; area is proportional to notional) with a one-click switch to exact bars when a
+trader wants the precise number at a level. Hover gives a crosshair and the dollar amount.</li>
+<li><strong>The same field over time — a heatmap.</strong> Price on the vertical, time on the
+horizontal, brightness = liquidable notional, with the mark-price path drawn over it. A resolution
+toggle (10-minute / hourly / daily) lets you go from “what changed this hour” to “how has the
+structure built over the week”. This is where you <em>see</em> fragility accumulate.</li>
+<li><strong>The index itself — gauge plus dual-axis history.</strong> A 0–100 gauge for the
+at-a-glance regime, beside the CFI plotted against BTC price on a second axis with green/amber/red
+regime bands. CFI rising while price chops sideways is the textbook “risk building beneath the
+surface”.</li>
+</ul>
+<p><strong>Time horizon:</strong> the map is a live snapshot; the history and heatmap read best over
+hours to days. <strong>Thresholds and annotations</strong> that earn their place: the regime bands,
+the asymmetry sign, and a callout on the single nearest large cluster (“$X of short fuel at +2.1%”).
+<strong>Overlays:</strong> mark/oracle, funding sign, and the one I'd push hardest for — Faro's own
+realized Liquidation Volume on the same price axis, so a trader sees fuel and ignition in one view.
+<strong>Where it lives:</strong> the BTC perp / derivatives page, in a positioning-and-risk tab, and
+exposed to Faro's agents as a structured, confidence-tagged signal (regime, asymmetry, nearest
+cluster, coverage) so the AI can cite it — and hedge or refuse when coverage is thin.</p>
+
+  <div class="appx-divider"><span>Appendices · data judgment &amp; the path to production</span></div>
+
+  <div class="sec-head"><span class="sec-num">A</span><h2>Data Quality, Freshness &amp; Reconciliation</h2></div>
+<p>This is the part a Head of Data is actually accountable for. The current run:</p>
 <table>
-<tr><th>Check</th><th>Value</th><th>Handling</th></tr>
+<tr><th>Check</th><th>Value</th><th>How it is handled</th></tr>
 <tr><td>Freshness</td><td><span id="fresh-cell">live</span></td><td>stale &gt; 2 cadences → alert + banner</td></tr>
-<tr><td>Coverage vs OI</td><td><span id="q-cov">{cov['coverage_ratio']:.1%}</span></td><td>explicit bound, never hidden</td></tr>
+<tr><td>Coverage vs OI</td><td><span id="q-cov">{cov['coverage_ratio']:.1%}</span></td><td>reported as an explicit bound, never hidden</td></tr>
 <tr><td>Positions / wallets</td><td><span id="q-pos">{int(cov['n_btc_positions'])} / {int(cov['n_wallets_queried'])}</span></td><td>thin sample → confidence downgraded</td></tr>
-<tr><td>liquidationPx = null</td><td><span id="q-null">{q['n_null_liqpx']} dropped</span></td><td>cross-margin; not placeable per-position</td></tr>
+<tr><td>liquidationPx = null</td><td><span id="q-null">{q['n_null_liqpx']} dropped</span></td><td>cross-margin; not placeable per position</td></tr>
 <tr><td>Dust (&lt; $10k)</td><td><span id="q-dust">{q['n_dust_filtered']} dropped</span></td><td>dust returns garbage liquidationPx</td></tr>
 <tr><td>Far / degenerate (&gt; 60%)</td><td><span id="q-far">{q['n_far_filtered']} dropped</span></td><td>numerically unreliable</td></tr>
 </table>
-<p><strong>Reconciliation.</strong> No endpoint returns the full book, so we reconcile what we
-<em>can</em>: <span id="q-recon">sampled {_money(cov['sampled_notional_usd'])} vs OI {_money(m['oi_usd'])}</span>
-— the coverage ratio — and mark vs oracle drift. Honest statement: <em>a high-coverage sample of
-the most active wallets, not a census.</em></p>
-<p><strong>History integrity.</strong> Every CFI reading is appended to an immutable ledger (union
-semantics, atomic writes) and snapshotted to git each run, and each snapshot's full histogram is
-kept for the heatmap — so nothing is silently dropped and the whole series is rebuildable from git
-history via <code>rebuild_history.py</code>.</p>
+<p><strong>Reconciliation.</strong> No endpoint returns the full book, so I reconcile what I
+<em>can</em>: <span id="q-recon">sampled {_money(cov['sampled_notional_usd'])} against OI {_money(m['oi_usd'])}</span>
+— the coverage ratio above — and mark versus oracle drift, which flags a data-quality event when it
+widens. The honest statement is a high-coverage sample of the most active wallets, not a census.
+<strong>History integrity:</strong> every CFI reading lands in the append-only ledger and is
+snapshotted to git each run, and each snapshot keeps its full histogram for the heatmap — so nothing
+is silently dropped, and the whole series can be rebuilt from git history via
+<code>rebuild_history.py</code>.</p>
 <div class="callout warn"><p><strong>Provenance &amp; caveat.</strong> {prov['caveat']} The
 leaderboard/activity feed used for wallet discovery is an <em>undocumented</em> Hyperliquid frontend
-endpoint, a PoC stand-in for production fills-WebSocket discovery.</p></div>
+endpoint — treated as a PoC stand-in for the production fills-WebSocket discovery described below.</p></div>
 
-  <div class="sec-head" style="margin-top:38px"><span class="sec-num">06</span><h2>Methodology</h2></div>
-<p>For each qualifying position with liquidable notional <em>N</em> and distance
-<em>d = |liqPx − mark| / mark</em>, proximity weight <code>K(d) = exp(−d/τ)</code>, τ = 8%.
-<strong>CFI</strong> = 100 · Σ N·K(d) / Σ N (notional-weighted average proximity; smooth kernel so
-a dust position on the mark can’t blow it up). <strong>Asymmetry</strong> = (short_pressure −
-long_pressure) / (sum). The Fig.01 curve is gaussian-smoothed for legibility (area ∝ notional);
-hover reports real notional within ±1.25%. Regime bands (calm &lt; {int(REGIME_BANDS['calm_max'])},
-elevated &lt; {int(REGIME_BANDS['elevated_max'])}, else fragile) are illustrative pending
-calibration on the accumulating history.</p>
+  <div class="sec-head" style="margin-top:38px"><span class="sec-num">B</span><h2>Methodology</h2></div>
+<p>For each qualifying position with liquidable notional <em>N</em> and fractional distance to its
+trigger <em>d = |liqPx − mark| / mark</em>, the proximity weight is <code>K(d) = exp(−d/τ)</code>
+with τ = 8%. Then <strong>CFI = 100 · Σ N·K(d) / Σ N</strong> — the notional-weighted average
+proximity, bounded 0–100; the smooth kernel is what stops a single dust position on the mark from
+blowing it up. <strong>Asymmetry = (short_pressure − long_pressure) / (short_pressure +
+long_pressure)</strong>, where side pressure is Σ N·K(d) on that side. The Fig.01 density curve is
+gaussian-smoothed for legibility (area stays proportional to notional); hover reports the real
+notional within ±1.25% of a level. The regime bands (calm &lt; {int(REGIME_BANDS['calm_max'])},
+elevated &lt; {int(REGIME_BANDS['elevated_max'])}, else fragile) are illustrative starting points,
+to be calibrated empirically on the CFI history the pipeline is now accumulating.</p>
 
-  <div class="sec-head" style="margin-top:38px"><span class="sec-num">07</span><h2>Wallet Universe, Coverage &amp; Path to Production</h2></div>
-<h3>How the sample is built (current PoC)</h3>
-<p><strong>Sequence.</strong> (1) Pull the public leaderboard/activity feed (~38k addresses).
-(2) Rank by <strong>activity_score = week volume + month volume</strong> and take the
-<strong>top 2,000</strong> — turnover is the best proxy for wallets actively carrying
-directional perp risk. (3) Query their live state concurrently via
-<code>clearinghouseState</code>, rate-limited to ~7.5 req/s (≈75% of the 1,200-weight/min
-budget; that call costs weight 2). (4) Keep those holding a qualifying open BTC position
-(notional ≥ $10k, <code>liquidationPx</code> present, within 60% of mark) — typically a few
-hundred at any instant — and aggregate them into the map.</p>
-<p><strong>Two selection layers, made explicit.</strong> The <em>2,000</em> are chosen once a
-day by activity; the on-map subset is <em>not</em> a second pick — it is simply whichever of the
-2,000 currently hold a live qualifying BTC position, which changes every snapshot as positions
-open and close.</p>
-<h3>Why this sample is enough for the PoC</h3>
-<p>Liquidable open interest is heavily concentrated in the most active wallets, so a
-high-activity sample captures the cascade-relevant structure — the large, near-price clusters
-that actually move price — while the long tail is many tiny positions that barely affect a
-cascade. This run reaches <strong><span id="q-cov2">{cov['coverage_ratio']:.0%}</span> of
-reported BTC OI</strong>. (Exchange OI is one-sided, so total open-position notional ≈ 2× OI;
-~half of reported OI is still a large, representative slice of what matters.)</p>
-<h3>Keeping it relevant over time</h3>
-<p>The universe is <strong>rebuilt daily</strong>, re-ranked by recent activity, so wallets that
-go quiet drop out and newly-active ones enter automatically — the list can't rot into dormant
-addresses. Staleness is tracked by a persisted build timestamp (robust to CI file mtimes), not
-the file date.</p>
-<h3>What “the real metric” looks like (production &amp; backfill — described, not built)</h3>
+  <div class="sec-head" style="margin-top:38px"><span class="sec-num">C</span><h2>Wallet Universe, Coverage &amp; Path to Production</h2></div>
+<h3>How the sample is built today</h3>
+<p>(1) Pull the public leaderboard feed (~38k addresses). (2) Rank by <strong>activity_score = week
+volume + month volume</strong> and keep the top 2,000 — turnover is the best proxy for wallets
+actively carrying directional perp risk (ranking by account value surfaces spot holders and vaults
+with no perp exposure, which I confirmed early on). (3) Query their live state concurrently, within
+the rate budget above. (4) Keep whichever currently hold a qualifying open BTC position (notional ≥
+$10k, <code>liquidationPx</code> present, within 60% of mark) — a few hundred at any instant — and
+aggregate them. The 2,000 is a daily, activity-ranked pick; the on-map subset is not a second
+selection, just whichever of those 2,000 hold a live position this snapshot.</p>
+<h3>Why this sample is enough for a proof of concept</h3>
+<p>Liquidable open interest is heavily concentrated in the most active wallets, so a high-activity
+sample captures the cascade-relevant structure — the large, near-price clusters that actually move
+price — while the long tail is many tiny positions that barely affect a cascade. This run reaches
+<strong><span id="q-cov2">{cov['coverage_ratio']:.0%}</span> of reported BTC open interest</strong>.
+(Exchange OI is one-sided, so total open-position notional is roughly twice the reported figure;
+even so, capturing ~half of the reported OI is a large, representative slice of what matters.) The
+universe is rebuilt daily and re-ranked by recent activity, so quiet wallets drop out and newly
+active ones come in automatically — the list can't decay into dormant addresses.</p>
+<h3>What the real, production version looks like (described, not built)</h3>
 <ul>
-<li><strong>Full population, not a sample:</strong> subscribe to the Hyperliquid fills WebSocket
-and keep a rolling registry of <em>every</em> address trading BTC, ranked by trailing volume —
-discovery becomes continuous instead of a daily leaderboard snapshot.</li>
-<li><strong>Event-sourced position engine:</strong> derive each wallet's open position by applying
-its fills + funding + liquidations in real time, instead of polling <code>clearinghouseState</code>
-per wallet. This scales to the whole market and lifts the rate-limit ceiling on coverage → ~100%
-of OI.</li>
-<li><strong>Historical backfill:</strong> replay the historical fill/funding/liquidation tape
-(per-wallet <code>userFillsByTime</code> plus an archival node / data export for the full feed)
-from each wallet's first trade forward, reconstructing the open-position book — and thus the
-liquidation map and CFI — at any past timestamp. Caveat: per-wallet fill history is capped, so
-genuine genesis-to-now reconstruction needs the archival feed and a snapshot anchor for positions
+<li><strong>Full population, not a sample.</strong> Subscribe to the Hyperliquid fills WebSocket and
+keep a rolling registry of every address trading BTC, ranked by trailing volume — discovery becomes
+continuous rather than a daily snapshot.</li>
+<li><strong>Event-sourced position engine.</strong> Derive each wallet's open position by applying
+its fills, funding and liquidations in real time instead of polling <code>clearinghouseState</code>
+per wallet. This scales to the whole market and removes the rate-limit ceiling on coverage,
+approaching ~100% of OI.</li>
+<li><strong>Historical backfill.</strong> Replay the historical fill/funding/liquidation tape
+(per-wallet <code>userFillsByTime</code> plus an archival node or data export for the full feed)
+from each wallet's first trade forward, reconstructing the open-position book — and therefore the
+liquidation map and CFI — at any past timestamp. Caveat: per-wallet fill history is capped, so a
+true genesis-to-now reconstruction needs the archival feed and a snapshot anchor for positions
 opened before the available window.</li>
-<li><strong>Continuous reconciliation:</strong> check the engine's derived aggregate OI against the
-exchange's reported OI per asset every cycle as a live data-quality gate; divergence flags a missed
-fill or a bug.</li>
+<li><strong>Continuous reconciliation.</strong> Check the engine's derived aggregate OI against the
+exchange's reported OI every cycle as a live data-quality gate; a divergence flags a missed fill or
+a bug before it reaches a trader.</li>
 </ul>
 </section>
 <footer>
