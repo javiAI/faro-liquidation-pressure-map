@@ -80,12 +80,14 @@
   .expand-btn:hover { color:var(--gold); border-color:var(--gold); }
   figure.chart.expanded { position:fixed; inset:2.5vh 2.5vw; z-index:2500; margin:0; overflow:hidden;
     display:flex; flex-direction:column; box-shadow:0 0 0 100vmax rgba(8,6,4,0.82); }
-  /* in fullscreen the chart area grows to fill; the chart divs follow (autosize) */
+  /* in fullscreen the chart area grows to fill; the chart divs follow (autosize).
+     !important so this always wins over the compact floating-panel heights when a figure
+     is expanded straight out of the sticky PiP (those selectors carry more id-specificity). */
   figure.chart.expanded #ladder-wrap, figure.chart.expanded #heatmap-wrap {
     flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
   figure.chart.expanded #ladder, figure.chart.expanded #heatmap,
-  figure.chart.expanded .row-body { flex:1 1 auto; min-height:0; height:auto; }
-  figure.chart.expanded #gauge, figure.chart.expanded #cfiprice { height:auto; min-height:0; }
+  figure.chart.expanded .row-body { flex:1 1 auto !important; min-height:0; height:auto !important; }
+  figure.chart.expanded #gauge, figure.chart.expanded #cfiprice { height:auto !important; min-height:0; }
   /* in fullscreen keep the explainer visible and readable; the chart fills the remaining height */
   figure.chart.expanded .explain { max-width:none; padding:8px 14px 10px; font-size:14px; }
   figure.chart.expanded .legend { padding:2px 14px 8px; }
@@ -126,11 +128,12 @@
   #charts.floating .seg { margin-top:6px; }
   #charts.floating figure.chart { margin:10px 0 12px; }
   #charts.floating #ladder, #charts.floating #heatmap { height:300px; }
-  #charts.floating #cfiprice, #charts.floating #gauge { height:215px; }
-  #charts.floating .row-body { grid-template-columns:1fr; }
+  #charts.floating #cfiprice, #charts.floating #gauge { height:240px; }
+  /* keep Fig.02 as gauge (left) + series (right), matching the article's “Left… / Right…” text */
   #charts.floating .reveal { opacity:1; animation:none; }
   .fig-ctl { display:flex; align-items:center; gap:10px; }
   .row-body { display:grid; grid-template-columns:1fr 2fr; gap:13px; align-items:stretch; }
+  .pip-hide { display:none !important; }   /* view toggle hides the inactive map/heatmap wrap */
   /* primary segmented tab control (clearly switchable) */
   .seg { display:inline-flex; background:var(--ink-2); border:1px solid var(--hair-strong); border-radius:12px;
     padding:4px; gap:4px; margin:20px 0 0; box-shadow:inset 0 1px 0 rgba(255,255,255,0.02); }
@@ -237,7 +240,7 @@
     </div>
     <div id="ladder"></div>
   </div>
-  <div id="heatmap-wrap" style="display:none">
+  <div id="heatmap-wrap" class="pip-hide">
     <div class="fig-top">
       <figcaption><span>Fig.01b — History heatmap</span></figcaption>
       <div class="fig-ctl">
@@ -711,8 +714,10 @@ function renderAll(d){
 }
 
 function showView(v){ VIEW=v;
-  document.getElementById('ladder-wrap').style.display = v==='heatmap'?'none':'block';
-  document.getElementById('heatmap-wrap').style.display = v==='heatmap'?'block':'none';
+  // toggle a class (not inline display) so the flex-fill of figure.chart.expanded #*-wrap
+  // still applies in fullscreen — an inline display would override it and squash the chart.
+  document.getElementById('ladder-wrap').classList.toggle('pip-hide', v==='heatmap');
+  document.getElementById('heatmap-wrap').classList.toggle('pip-hide', v!=='heatmap');
   document.querySelectorAll('#primary-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
   Plotly.Plots.resize(v==='heatmap'?'heatmap':'ladder');
 }
