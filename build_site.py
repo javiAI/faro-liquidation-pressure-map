@@ -110,9 +110,12 @@ def build_payload(snapshot: dict[str, Any], history: pd.DataFrame,
     }
     hist = []
     if not history.empty:
+        has_asym = "asymmetry" in history.columns
         for r in history.sort_values("timestamp").itertuples():
             price = float(r.mark_px) if "mark_px" in history.columns else None
-            hist.append({"t": r.timestamp, "cfi": float(r.cfi), "price": price})
+            asym = float(r.asymmetry) if (has_asym and pd.notna(r.asymmetry)) else None
+            hist.append({"t": r.timestamp, "cfi": float(r.cfi), "price": price,
+                         "asym": asym})
     return {
         "generated_at": snapshot["provenance"]["generated_at"],
         "market": snapshot["market"],
@@ -202,10 +205,10 @@ _CSS = r"""
     box-shadow:0 14px 38px rgba(0,0,0,0.55); opacity:0; transform:translateY(-4px); pointer-events:none;
     transition:opacity .15s ease, transform .15s ease; }
   #cardtip.show { opacity:1; transform:none; }
-  /* expand-to-fullscreen button + state */
-  .expand-btn { font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
+  /* expand-to-fullscreen + dock-to-side buttons */
+  .expand-btn, .dock-btn { font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
     border:1px solid var(--hair); border-radius:7px; width:30px; height:26px; cursor:pointer; transition:all .18s ease; }
-  .expand-btn:hover { color:var(--gold); border-color:var(--gold); }
+  .expand-btn:hover, .dock-btn:hover { color:var(--gold); border-color:var(--gold); }
   figure.chart.expanded { position:fixed; inset:2.5vh 2.5vw; z-index:2500; margin:0; overflow:hidden;
     display:flex; flex-direction:column; box-shadow:0 0 0 100vmax rgba(8,6,4,0.82); }
   /* in fullscreen the chart area grows to fill; the chart divs follow (autosize) */
@@ -214,9 +217,28 @@ _CSS = r"""
   figure.chart.expanded #ladder, figure.chart.expanded #heatmap,
   figure.chart.expanded .row-body { flex:1 1 auto; min-height:0; height:auto; }
   figure.chart.expanded #gauge, figure.chart.expanded #cfiprice { height:auto; min-height:0; }
-  /* in fullscreen, hide the descriptive text/legend so the chart itself fills the height */
-  figure.chart.expanded .explain, figure.chart.expanded .legend { display:none; }
+  /* in fullscreen keep the explainer visible and readable; the chart fills the remaining height */
+  figure.chart.expanded .explain { max-width:none; padding:8px 14px 10px; font-size:14px; }
+  figure.chart.expanded .legend { padding:2px 14px 8px; }
   body.has-expanded { overflow:hidden; }
+  /* dock-to-side: a sticky panel on the right that holds one figure (wide screens only) */
+  #dock { position:fixed; top:64px; right:14px; bottom:16px; width:42vw; max-width:760px; z-index:1500;
+    display:none; flex-direction:column; overflow:hidden; border:1px solid var(--hair-strong); border-radius:15px;
+    background:linear-gradient(180deg,var(--card),var(--ink-2)); box-shadow:0 26px 74px rgba(0,0,0,0.62); }
+  body.docked #dock { display:flex; }
+  body.docked .wrap { padding-right:calc(42vw + 28px); }
+  .dock-head { display:flex; align-items:center; gap:9px; padding:9px 11px; border-bottom:1px solid var(--hair); }
+  .dock-head .dh-title { flex:1; font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+  .dock-head button { font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--ink-2);
+    border:1px solid var(--hair); border-radius:7px; width:28px; height:26px; cursor:pointer; transition:all .18s ease; }
+  .dock-head button:hover { color:var(--gold); border-color:var(--gold); }
+  #dock-body { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:auto; padding:7px; }
+  #dock-body figure.chart { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; margin:0; }
+  /* reuse the fill behaviour so a docked chart grows to fill the panel */
+  #dock figure #ladder-wrap, #dock figure #heatmap-wrap { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+  #dock figure #ladder, #dock figure #heatmap, #dock figure .row-body { flex:1 1 auto; min-height:0; height:auto; }
+  #dock figure #gauge, #dock figure #cfiprice { height:auto; min-height:0; }
+  @media (max-width:1100px) { .dock-btn { display:none; } body.docked .wrap { padding-right:22px; } }
   .fig-ctl { display:flex; align-items:center; gap:10px; }
   .row-body { display:grid; grid-template-columns:1fr 2fr; gap:13px; align-items:stretch; }
   /* primary segmented tab control (clearly switchable) */
@@ -384,15 +406,26 @@ function renderGauge(d){
 }
 
 function renderCfiPrice(d){
-  // Unified: Cascade Fragility Index (left axis, regime bands) vs BTC price (right axis).
+  // Stacked, shared time axis. Top: Cascade Fragility Index (left, regime bands) vs
+  // BTC price (right). Bottom (narrow): long/short asymmetry — fill split by sign
+  // (red = short-side fuel above price, teal = long-side fuel below), neutral value line.
   const H=d.history, x=H.map(p=>p.t), cfi=H.map(p=>p.cfi), price=H.map(p=>p.price);
+  const asym=H.map(p=>p.asym==null?null:p.asym);
+  const aPos=asym.map(v=>v==null?null:Math.max(v,0)), aNeg=asym.map(v=>v==null?null:Math.min(v,0));
   const lay=baseLayout('');   // named by the figcaption + explanation above; keep the plot airy
-  lay.margin={l:60,r:66,t:34,b:56}; lay.hovermode='x unified'; lay.showlegend=true;
-  lay.legend={orientation:'h',y:1.18,x:0,bgcolor:'rgba(0,0,0,0)',font:{size:11.5,color:MUTED}};
-  lay.yaxis=Object.assign(lay.yaxis,{range:[0,100],title:{text:'CFI',font:{color:GOLD,size:11}},tickfont:{color:GOLD,size:11}});
+  lay.margin={l:60,r:66,t:34,b:46}; lay.hovermode='x unified'; lay.showlegend=true;
+  lay.legend={orientation:'h',y:1.16,x:0,bgcolor:'rgba(0,0,0,0)',font:{size:11.5,color:MUTED}};
+  // shared x: ticks only on the bottom axis (x2, anchored to the asymmetry panel)
+  lay.xaxis=Object.assign(lay.xaxis,{type:'date',anchor:'y',showticklabels:false,title:''});
+  lay.xaxis2={type:'date',anchor:'y3',matches:'x',gridcolor:GRID,zerolinecolor:GRID,linecolor:GRID,tickfont:{color:MUTED,size:11}};
+  // top panel (domain 0.30–1): CFI left, BTC price right (overlay)
+  lay.yaxis=Object.assign(lay.yaxis,{domain:[0.30,1],range:[0,100],title:{text:'CFI',font:{color:GOLD,size:11}},tickfont:{color:GOLD,size:11}});
   lay.yaxis2={overlaying:'y',side:'right',tickprefix:'$',tickformat:'~s',showgrid:false,zeroline:false,
     title:{text:'BTC price',font:{color:'#cdbfa8',size:11}},tickfont:{color:'#cdbfa8',size:11}};
-  lay.xaxis=Object.assign(lay.xaxis,{type:'date',title:''});
+  // bottom panel (domain 0–0.22): asymmetry in [-1,1], baseline at 0
+  lay.yaxis3={domain:[0,0.22],range:[-1,1],anchor:'x2',zeroline:true,zerolinewidth:1,zerolinecolor:'rgba(202,191,174,0.45)',
+    gridcolor:GRID,tickvals:[-1,0,1],ticktext:['long','0','short'],tickfont:{color:MUTED,size:9},
+    title:{text:'asym',font:{color:MUTED,size:9.5}}};
   lay.shapes=[{type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:0,y1:POLICY.calm,fillcolor:LONG,opacity:0.06,line:{width:0}},
               {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:POLICY.calm,y1:POLICY.elev,fillcolor:GOLD,opacity:0.06,line:{width:0}},
               {type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:POLICY.elev,y1:100,fillcolor:SHORT,opacity:0.06,line:{width:0}}];
@@ -400,7 +433,13 @@ function renderCfiPrice(d){
     {x:x,y:cfi,name:'CFI',yaxis:'y',type:'scatter',mode:'lines',line:{color:GOLD,width:2,shape:'spline',smoothing:0.4},
      fill:'tozeroy',fillcolor:'rgba(232,161,58,0.06)',hovertemplate:'CFI %{y:.1f}<extra></extra>'},
     {x:x,y:price,name:'BTC price',yaxis:'y2',type:'scatter',mode:'lines',line:{color:'#cdbfa8',width:1.5},
-     hovertemplate:'$%{y:,.0f}<extra></extra>'}];
+     hovertemplate:'$%{y:,.0f}<extra></extra>'},
+    {x:x,y:aPos,xaxis:'x2',yaxis:'y3',type:'scatter',mode:'lines',fill:'tozeroy',fillcolor:'rgba(229,86,78,0.25)',
+     line:{width:0},hoverinfo:'skip',showlegend:false},
+    {x:x,y:aNeg,xaxis:'x2',yaxis:'y3',type:'scatter',mode:'lines',fill:'tozeroy',fillcolor:'rgba(63,185,140,0.25)',
+     line:{width:0},hoverinfo:'skip',showlegend:false},
+    {x:x,y:asym,name:'asymmetry',xaxis:'x2',yaxis:'y3',type:'scatter',mode:'lines',connectgaps:false,
+     line:{color:'#cabfae',width:1.3},hovertemplate:'asym %{y:+.2f}<extra></extra>'}];
   Plotly.react('cfiprice',traces,lay,CFG);
 }
 
@@ -495,6 +534,13 @@ document.addEventListener('click',function(e){
   } else if(!e.target.closest('#cardtip')){ hideTip(); }
 });
 
+// Let Plotly re-read the new box for every visible chart inside a figure (after layout settles).
+function resizeFigCharts(fig){ if(!fig)return;
+  requestAnimationFrame(()=>setTimeout(()=>{
+    fig.querySelectorAll('.js-plotly-plot').forEach(d=>{ if(d.offsetParent!==null) Plotly.Plots.resize(d); });
+  },40));
+}
+
 // --- expand any figure to (near) fullscreen ---
 // Charts are autosize with CSS-driven heights, so expanding just changes the container
 // (CSS .expanded makes the chart fill it) and we let Plotly re-read the new box.
@@ -503,12 +549,54 @@ function toggleExpand(figId){
   const exp=fig.classList.toggle('expanded');
   document.body.classList.toggle('has-expanded', !!document.querySelector('figure.chart.expanded'));
   fig.querySelectorAll('.expand-btn').forEach(b=>{b.textContent=exp?'✕':'⤢'; b.title=exp?'Close (Esc)':'Expand';});
-  requestAnimationFrame(()=>setTimeout(()=>{
-    fig.querySelectorAll('.js-plotly-plot').forEach(d=>{ if(d.offsetParent!==null) Plotly.Plots.resize(d); });
-  },40));
+  resizeFigCharts(fig);
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape')
   document.querySelectorAll('figure.chart.expanded').forEach(f=>toggleExpand(f.id)); });
+
+// --- dock a figure to a sticky side panel (wide screens only) ---
+// The figure is moved into #dock (a placeholder marks its home so it restores exactly).
+// ‹ › cycle between the dockable figures, ✕ closes and returns the figure to the page.
+const DOCKABLE=['fig-map','fig-frag']; let DOCKED=null;
+function figTitle(figId){ const f=document.getElementById(figId);
+  const c=f&&f.querySelector('figcaption span'); return c?c.textContent:figId; }
+function buildDock(){
+  if(document.getElementById('dock'))return;
+  const dk=document.createElement('div'); dk.id='dock';
+  dk.innerHTML='<div class="dock-head"><button id="dock-prev" title="Previous">‹</button>'+
+    '<button id="dock-next" title="Next">›</button><span class="dh-title" id="dock-title"></span>'+
+    '<button id="dock-close" title="Close">✕</button></div><div id="dock-body"></div>';
+  document.body.appendChild(dk);
+  document.getElementById('dock-close').addEventListener('click',()=>undock());
+  document.getElementById('dock-prev').addEventListener('click',()=>cycleDock(-1));
+  document.getElementById('dock-next').addEventListener('click',()=>cycleDock(1));
+}
+function dockFig(figId){
+  if(window.innerWidth<=1100)return;          // sticky dock is a wide-screen affordance
+  if(DOCKED===figId){ undock(); return; }     // toggle off if already docked
+  buildDock();
+  if(DOCKED) undock(true);                     // park the current one, keep the panel open
+  const fig=document.getElementById(figId); if(!fig)return;
+  const ph=document.createElement('div'); ph.id=figId+'-ph'; ph.style.display='none';
+  fig.parentNode.insertBefore(ph,fig);         // remember the home slot
+  document.getElementById('dock-body').appendChild(fig);
+  document.body.classList.add('docked'); DOCKED=figId;
+  setText('dock-title',figTitle(figId));
+  resizeFigCharts(fig);
+}
+function undock(keepOpen){
+  if(!DOCKED)return;
+  const fig=document.getElementById(DOCKED), ph=document.getElementById(DOCKED+'-ph');
+  if(fig&&ph){ ph.parentNode.insertBefore(fig,ph); ph.remove(); }
+  DOCKED=null;
+  if(!keepOpen) document.body.classList.remove('docked');
+  resizeFigCharts(fig);
+}
+function cycleDock(dir){
+  if(!DOCKED)return;
+  const i=DOCKABLE.indexOf(DOCKED);
+  dockFig(DOCKABLE[(i+dir+DOCKABLE.length)%DOCKABLE.length]);
+}
 
 // Fetch the latest data.json; if it's a newer snapshot, re-render in place + flash.
 // Returns the parsed payload (or null), so callers can act on whether it changed.
@@ -546,6 +634,7 @@ document.querySelectorAll('#primary-tabs button').forEach(b=>b.addEventListener(
 document.querySelectorAll('#ladder-mode button').forEach(b=>b.addEventListener('click',()=>setLadderMode(b.dataset.m)));
 document.querySelectorAll('#heatmap-res button').forEach(b=>b.addEventListener('click',()=>setHeatRes(b.dataset.r)));
 document.querySelectorAll('.expand-btn').forEach(b=>b.addEventListener('click',()=>toggleExpand(b.dataset.fig)));
+document.querySelectorAll('.dock-btn').forEach(b=>b.addEventListener('click',()=>dockFig(b.dataset.fig)));
 const _ub=document.getElementById('update-btn'); if(_ub) _ub.addEventListener('click',manualUpdate);
 renderAll(window.__DATA__);
 setInterval(poll,60000);
@@ -594,6 +683,7 @@ def _charts() -> str:
           <button class="active" data-m="density">density</button>
           <button data-m="bars">bars</button>
         </div>
+        <button class="dock-btn" data-fig="fig-map" title="Dock to side">⇥</button>
         <button class="expand-btn" data-fig="fig-map" title="Expand">⤢</button>
       </div>
     </div>
@@ -616,6 +706,7 @@ def _charts() -> str:
           <button class="active" data-r="hour">hourly</button>
           <button data-r="day">daily</button>
         </div>
+        <button class="dock-btn" data-fig="fig-map" title="Dock to side">⇥</button>
         <button class="expand-btn" data-fig="fig-map" title="Expand">⤢</button>
       </div>
     </div>
@@ -628,11 +719,16 @@ def _charts() -> str:
 <figure class="chart reveal" id="fig-frag" style="animation-delay:.18s">
   <div class="fig-top">
     <figcaption><span>Fig.02 — Fragility: now &amp; over time</span></figcaption>
-    <button class="expand-btn" data-fig="fig-frag" title="Expand">⤢</button>
+    <div class="fig-ctl">
+      <button class="dock-btn" data-fig="fig-frag" title="Dock to side">⇥</button>
+      <button class="expand-btn" data-fig="fig-frag" title="Expand">⤢</button>
+    </div>
   </div>
   <p class="explain"><b>Left:</b> the current Cascade Fragility Index as a 0–100 “fear gauge” (green calm,
-     amber building, red fragile). <b>Right:</b> the index (gold) against <b>BTC price</b> (white) over time,
-     with regime bands — watch fragility build or bleed off as price moves.</p>
+     amber building, red fragile). <b>Right (top):</b> the index (gold) against <b>BTC price</b> (white) over time,
+     with regime bands. <b>Right (strip below):</b> long/short <b>asymmetry</b> on the same timeline —
+     <b>red above 0</b> = short-side fuel (squeeze-up risk), <b>teal below 0</b> = long-side fuel (flush-down risk).
+     Watch fragility build or bleed off as price moves.</p>
   <div class="row-body">
     <div id="gauge"></div>
     <div id="cfiprice"></div>
