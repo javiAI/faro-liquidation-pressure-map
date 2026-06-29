@@ -3,1998 +3,1998 @@
   "provenance": {
     "source": "Hyperliquid public API (info + leaderboard feed)",
     "method": "aggregate open BTC perp positions of top-activity wallets",
-    "generated_at": "2026-06-29T12:23:14+00:00",
-    "coverage_ratio_vs_oi": 0.4654779645519113,
+    "generated_at": "2026-06-29T12:33:14+00:00",
+    "coverage_ratio_vs_oi": 0.45842302206232327,
     "caveat": "Approximate market coverage from a wallet sample; not the full order book. liquidationPx is exchange-provided."
   },
   "market": {
     "coin": "BTC",
-    "mark_px": 60697.0,
-    "oracle_px": 60718.0,
+    "mark_px": 60446.0,
+    "oracle_px": 60472.0,
     "funding_hourly": 1.25e-05,
-    "oi_btc": 34167.0015199999,
-    "oi_usd": 2073834491.2594342
+    "oi_btc": 34149.42336,
+    "oi_usd": 2064196044.41856
   },
   "signals": {
-    "cfi": 21.07,
+    "cfi": 20.39,
     "regime": "calm",
-    "asymmetry": 0.3408,
-    "long_pressure": 67041521.0126427,
-    "short_pressure": 136365438.43931326,
+    "asymmetry": 0.2949,
+    "long_pressure": 68030495.43531838,
+    "short_pressure": 124945822.98388344,
     "near_band_usd": {
       "0.02": {
-        "long": 2702439.0422900002,
-        "short": 46932534.813939996,
-        "total": 49634973.85623
+        "long": 4198380.42911,
+        "short": 20786467.423399996,
+        "total": 24984847.852509998
       },
       "0.05": {
-        "long": 28444755.022129998,
-        "short": 76122498.73894998,
-        "total": 104567253.76107998
+        "long": 46510632.10527,
+        "short": 69762631.43337001,
+        "total": 116273263.53864
       },
       "0.10": {
-        "long": 88803910.59841,
-        "short": 196406461.05242997,
-        "total": 285210371.65084
+        "long": 88780783.49159001,
+        "short": 185286588.00035995,
+        "total": 274067371.49195
       }
     }
   },
   "coverage": {
     "n_wallets_queried": 2000.0,
-    "n_btc_positions": 277.0,
-    "sampled_notional_usd": 965324257.80899,
-    "coverage_ratio": 0.4654779645519113
+    "n_btc_positions": 270.0,
+    "sampled_notional_usd": 946274988.81145,
+    "coverage_ratio": 0.45842302206232327
   },
   "quality": {
-    "n_raw": 455,
-    "n_null_liqpx": 78,
-    "n_dust_filtered": 32,
+    "n_raw": 449,
+    "n_null_liqpx": 82,
+    "n_dust_filtered": 29,
     "n_far_filtered": 68
   },
   "histogram": [
     {
-      "price_low": 24278.800000000003,
-      "price_high": 24582.285000000003,
-      "price_mid": 24430.542500000003,
-      "distance_pct": -59.74999999999999,
-      "long_notional": 100141.73425,
+      "price_low": 24178.4,
+      "price_high": 24480.63,
+      "price_mid": 24329.515,
+      "distance_pct": -59.75,
+      "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 24582.285000000003,
-      "price_high": 24885.770000000004,
-      "price_mid": 24734.027500000004,
+      "price_low": 24480.63,
+      "price_high": 24782.86,
+      "price_mid": 24631.745000000003,
       "distance_pct": -59.24999999999999,
+      "long_notional": 99751.96845,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 24782.86,
+      "price_high": 25085.09,
+      "price_mid": 24933.975,
+      "distance_pct": -58.75,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 24885.770000000004,
-      "price_high": 25189.255000000005,
-      "price_mid": 25037.512500000004,
-      "distance_pct": -58.74999999999999,
+      "price_low": 25085.09,
+      "price_high": 25387.320000000003,
+      "price_mid": 25236.205,
+      "distance_pct": -58.25,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 25189.255000000005,
-      "price_high": 25492.74,
-      "price_mid": 25340.997500000005,
-      "distance_pct": -58.24999999999999,
+      "price_low": 25387.320000000003,
+      "price_high": 25689.550000000003,
+      "price_mid": 25538.435000000005,
+      "distance_pct": -57.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 25492.74,
-      "price_high": 25796.225000000002,
-      "price_mid": 25644.482500000002,
-      "distance_pct": -57.75,
-      "long_notional": 0.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 25796.225000000002,
-      "price_high": 26099.710000000003,
-      "price_mid": 25947.967500000002,
+      "price_low": 25689.550000000003,
+      "price_high": 25991.780000000002,
+      "price_mid": 25840.665,
       "distance_pct": -57.25,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 26099.710000000003,
-      "price_high": 26403.195000000003,
-      "price_mid": 26251.452500000003,
-      "distance_pct": -56.75,
+      "price_low": 25991.780000000002,
+      "price_high": 26294.010000000002,
+      "price_mid": 26142.895000000004,
+      "distance_pct": -56.749999999999986,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 26403.195000000003,
-      "price_high": 26706.680000000004,
-      "price_mid": 26554.937500000004,
+      "price_low": 26294.010000000002,
+      "price_high": 26596.24,
+      "price_mid": 26445.125,
       "distance_pct": -56.25,
-      "long_notional": 151757.66448,
+      "long_notional": 60431.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 26706.680000000004,
-      "price_high": 27010.165000000005,
-      "price_mid": 26858.422500000004,
+      "price_low": 26596.24,
+      "price_high": 26898.47,
+      "price_mid": 26747.355000000003,
       "distance_pct": -55.75,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 27010.165000000005,
-      "price_high": 27313.65,
-      "price_mid": 27161.9075,
+      "price_low": 26898.47,
+      "price_high": 27200.7,
+      "price_mid": 27049.585,
       "distance_pct": -55.25,
-      "long_notional": 0.0,
+      "long_notional": 151163.95104,
       "short_notional": 0.0
     },
     {
-      "price_low": 27313.65,
-      "price_high": 27617.135000000002,
-      "price_mid": 27465.3925,
+      "price_low": 27200.7,
+      "price_high": 27502.93,
+      "price_mid": 27351.815000000002,
       "distance_pct": -54.75,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 27617.135000000002,
-      "price_high": 27920.620000000003,
-      "price_mid": 27768.877500000002,
+      "price_low": 27502.93,
+      "price_high": 27805.160000000003,
+      "price_mid": 27654.045000000002,
       "distance_pct": -54.25,
-      "long_notional": 1919020.7961,
+      "long_notional": 1913439.11274,
       "short_notional": 0.0
     },
     {
-      "price_low": 27920.620000000003,
-      "price_high": 28224.105000000003,
-      "price_mid": 28072.362500000003,
+      "price_low": 27805.160000000003,
+      "price_high": 28107.390000000003,
+      "price_mid": 27956.275,
       "distance_pct": -53.75,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 28224.105000000003,
-      "price_high": 28527.590000000004,
-      "price_mid": 28375.847500000003,
+      "price_low": 28107.390000000003,
+      "price_high": 28409.620000000003,
+      "price_mid": 28258.505000000005,
       "distance_pct": -53.25,
-      "long_notional": 872890.8944,
+      "long_notional": 29746.22106,
       "short_notional": 0.0
     },
     {
-      "price_low": 28527.590000000004,
-      "price_high": 28831.075000000004,
-      "price_mid": 28679.332500000004,
+      "price_low": 28409.620000000003,
+      "price_high": 28711.850000000002,
+      "price_mid": 28560.735,
       "distance_pct": -52.75,
+      "long_notional": 868880.2136,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 28711.850000000002,
+      "price_high": 29014.08,
+      "price_mid": 28862.965000000004,
+      "distance_pct": -52.25,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 28831.075000000004,
-      "price_high": 29134.560000000005,
-      "price_mid": 28982.817500000005,
-      "distance_pct": -52.25,
-      "long_notional": 90942.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 29134.560000000005,
-      "price_high": 29438.045000000002,
-      "price_mid": 29286.302500000005,
+      "price_low": 29014.08,
+      "price_high": 29316.31,
+      "price_mid": 29165.195,
       "distance_pct": -51.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 29438.045000000002,
-      "price_high": 29741.530000000002,
-      "price_mid": 29589.787500000002,
+      "price_low": 29316.31,
+      "price_high": 29618.54,
+      "price_mid": 29467.425000000003,
       "distance_pct": -51.24999999999999,
-      "long_notional": 0.0,
+      "long_notional": 90541.5,
       "short_notional": 0.0
     },
     {
-      "price_low": 29741.530000000002,
-      "price_high": 30045.015000000003,
-      "price_mid": 29893.272500000003,
+      "price_low": 29618.54,
+      "price_high": 29920.770000000004,
+      "price_mid": 29769.655000000002,
       "distance_pct": -50.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 30045.015000000003,
-      "price_high": 30348.500000000004,
-      "price_mid": 30196.757500000003,
+      "price_low": 29920.770000000004,
+      "price_high": 30223.000000000004,
+      "price_mid": 30071.885000000002,
       "distance_pct": -50.24999999999999,
-      "long_notional": 496337.39665,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 30348.500000000004,
-      "price_high": 30651.985000000004,
-      "price_mid": 30500.242500000004,
-      "distance_pct": -49.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 30651.985000000004,
-      "price_high": 30955.470000000005,
-      "price_mid": 30803.727500000005,
-      "distance_pct": -49.24999999999999,
-      "long_notional": 221978.6506,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 30955.470000000005,
-      "price_high": 31258.955,
-      "price_mid": 31107.2125,
-      "distance_pct": -48.75,
+      "price_low": 30223.000000000004,
+      "price_high": 30525.230000000003,
+      "price_mid": 30374.115000000005,
+      "distance_pct": -49.749999999999986,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 31258.955,
-      "price_high": 31562.440000000002,
-      "price_mid": 31410.697500000002,
+      "price_low": 30525.230000000003,
+      "price_high": 30827.460000000003,
+      "price_mid": 30676.345,
+      "distance_pct": -49.25,
+      "long_notional": 309103.54705,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 30827.460000000003,
+      "price_high": 31129.690000000002,
+      "price_mid": 30978.575000000004,
+      "distance_pct": -48.74999999999999,
+      "long_notional": 0.0,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 31129.690000000002,
+      "price_high": 31431.920000000002,
+      "price_mid": 31280.805,
       "distance_pct": -48.25,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 31562.440000000002,
-      "price_high": 31865.925000000003,
-      "price_mid": 31714.182500000003,
-      "distance_pct": -47.75,
+      "price_low": 31431.920000000002,
+      "price_high": 31734.15,
+      "price_mid": 31583.035000000003,
+      "distance_pct": -47.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 31865.925000000003,
-      "price_high": 32169.410000000003,
-      "price_mid": 32017.667500000003,
-      "distance_pct": -47.24999999999999,
+      "price_low": 31734.15,
+      "price_high": 32036.38,
+      "price_mid": 31885.265,
+      "distance_pct": -47.25,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 32169.410000000003,
-      "price_high": 32472.895000000004,
-      "price_mid": 32321.152500000004,
-      "distance_pct": -46.74999999999999,
+      "price_low": 32036.38,
+      "price_high": 32338.610000000004,
+      "price_mid": 32187.495000000003,
+      "distance_pct": -46.75,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 32472.895000000004,
-      "price_high": 32776.380000000005,
-      "price_mid": 32624.637500000004,
+      "price_low": 32338.610000000004,
+      "price_high": 32640.840000000004,
+      "price_mid": 32489.725000000006,
       "distance_pct": -46.24999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 32776.380000000005,
-      "price_high": 33079.865000000005,
-      "price_mid": 32928.122500000005,
+      "price_low": 32640.840000000004,
+      "price_high": 32943.07000000001,
+      "price_mid": 32791.955,
       "distance_pct": -45.74999999999999,
-      "long_notional": 13707254.08423,
+      "long_notional": 13648427.985350002,
       "short_notional": 0.0
     },
     {
-      "price_low": 33079.865000000005,
-      "price_high": 33383.350000000006,
-      "price_mid": 33231.607500000006,
+      "price_low": 32943.07000000001,
+      "price_high": 33245.3,
+      "price_mid": 33094.185000000005,
       "distance_pct": -45.24999999999999,
-      "long_notional": 2138788.35031,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 33383.350000000006,
-      "price_high": 33686.83500000001,
-      "price_mid": 33535.092500000006,
-      "distance_pct": -44.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 33686.83500000001,
-      "price_high": 33990.32000000001,
-      "price_mid": 33838.57750000001,
-      "distance_pct": -44.249999999999986,
-      "long_notional": 50853.4155,
+      "price_low": 33245.3,
+      "price_high": 33547.53,
+      "price_mid": 33396.415,
+      "distance_pct": -44.75,
+      "long_notional": 2129064.50323,
       "short_notional": 0.0
     },
     {
-      "price_low": 33990.32000000001,
-      "price_high": 34293.80500000001,
-      "price_mid": 34142.06250000001,
-      "distance_pct": -43.749999999999986,
+      "price_low": 33547.53,
+      "price_high": 33849.76,
+      "price_mid": 33698.645000000004,
+      "distance_pct": -44.24999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 34293.80500000001,
-      "price_high": 34597.29,
-      "price_mid": 34445.5475,
-      "distance_pct": -43.25,
+      "price_low": 33849.76,
+      "price_high": 34151.990000000005,
+      "price_mid": 34000.875,
+      "distance_pct": -43.75,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 34597.29,
-      "price_high": 34900.77500000001,
-      "price_mid": 34749.0325,
-      "distance_pct": -42.75,
-      "long_notional": 3642120.0,
+      "price_low": 34151.990000000005,
+      "price_high": 34454.22,
+      "price_mid": 34303.105,
+      "distance_pct": -43.24999999999999,
+      "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 34900.77500000001,
-      "price_high": 35204.26,
-      "price_mid": 35052.5175,
+      "price_low": 34454.22,
+      "price_high": 34756.450000000004,
+      "price_mid": 34605.33500000001,
+      "distance_pct": -42.749999999999986,
+      "long_notional": 0.0,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 34756.450000000004,
+      "price_high": 35058.68,
+      "price_mid": 34907.565,
       "distance_pct": -42.25,
+      "long_notional": 3626700.0,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 35058.68,
+      "price_high": 35360.91,
+      "price_mid": 35209.795,
+      "distance_pct": -41.75000000000001,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 35204.26,
-      "price_high": 35507.745,
-      "price_mid": 35356.0025,
-      "distance_pct": -41.75,
-      "long_notional": 0.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 35507.745,
-      "price_high": 35811.23,
-      "price_mid": 35659.4875,
+      "price_low": 35360.91,
+      "price_high": 35663.14,
+      "price_mid": 35512.025,
       "distance_pct": -41.25,
-      "long_notional": 3388888.18422,
+      "long_notional": 3371589.68202,
       "short_notional": 0.0
     },
     {
-      "price_low": 35811.23,
-      "price_high": 36114.715000000004,
-      "price_mid": 35962.9725,
+      "price_low": 35663.14,
+      "price_high": 35965.37,
+      "price_mid": 35814.255000000005,
       "distance_pct": -40.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 36114.715000000004,
-      "price_high": 36418.200000000004,
-      "price_mid": 36266.457500000004,
-      "distance_pct": -40.24999999999999,
-      "long_notional": 0.0,
+      "price_low": 35965.37,
+      "price_high": 36267.600000000006,
+      "price_mid": 36116.485,
+      "distance_pct": -40.25,
+      "long_notional": 50608.9239,
       "short_notional": 0.0
     },
     {
-      "price_low": 36418.200000000004,
-      "price_high": 36721.685000000005,
-      "price_mid": 36569.942500000005,
-      "distance_pct": -39.74999999999999,
-      "long_notional": 15158750.0,
+      "price_low": 36267.600000000006,
+      "price_high": 36569.83,
+      "price_mid": 36418.715000000004,
+      "distance_pct": -39.75,
+      "long_notional": 614942.83445,
       "short_notional": 0.0
     },
     {
-      "price_low": 36721.685000000005,
-      "price_high": 37025.170000000006,
-      "price_mid": 36873.427500000005,
+      "price_low": 36569.83,
+      "price_high": 36872.060000000005,
+      "price_mid": 36720.94500000001,
       "distance_pct": -39.24999999999999,
-      "long_notional": 0.0,
+      "long_notional": 15098750.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 37025.170000000006,
-      "price_high": 37328.655000000006,
-      "price_mid": 37176.912500000006,
+      "price_low": 36872.060000000005,
+      "price_high": 37174.29000000001,
+      "price_mid": 37023.175,
       "distance_pct": -38.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 37328.655000000006,
-      "price_high": 37632.14000000001,
-      "price_mid": 37480.39750000001,
+      "price_low": 37174.29000000001,
+      "price_high": 37476.520000000004,
+      "price_mid": 37325.405000000006,
       "distance_pct": -38.24999999999999,
-      "long_notional": 3573725.5162,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 37632.14000000001,
-      "price_high": 37935.62500000001,
-      "price_mid": 37783.88250000001,
-      "distance_pct": -37.749999999999986,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 37935.62500000001,
-      "price_high": 38239.11,
-      "price_mid": 38087.36750000001,
+      "price_low": 37476.520000000004,
+      "price_high": 37778.75,
+      "price_mid": 37627.635,
+      "distance_pct": -37.74999999999999,
+      "long_notional": 3557870.8445,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 37778.75,
+      "price_high": 38080.98,
+      "price_mid": 37929.865000000005,
       "distance_pct": -37.249999999999986,
-      "long_notional": 0.0,
+      "long_notional": 302055.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 38239.11,
-      "price_high": 38542.595,
-      "price_mid": 38390.8525,
+      "price_low": 38080.98,
+      "price_high": 38383.21000000001,
+      "price_mid": 38232.095,
       "distance_pct": -36.75,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 38542.595,
-      "price_high": 38846.08,
-      "price_mid": 38694.3375,
-      "distance_pct": -36.25,
-      "long_notional": 3097456.0,
+      "price_low": 38383.21000000001,
+      "price_high": 38685.44,
+      "price_mid": 38534.325000000004,
+      "distance_pct": -36.24999999999999,
+      "long_notional": 3126834.25053,
       "short_notional": 0.0
     },
     {
-      "price_low": 38846.08,
-      "price_high": 39149.565,
-      "price_mid": 38997.8225,
-      "distance_pct": -35.75,
-      "long_notional": 121156.0,
+      "price_low": 38685.44,
+      "price_high": 38987.670000000006,
+      "price_mid": 38836.55500000001,
+      "distance_pct": -35.749999999999986,
+      "long_notional": 60351.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 39149.565,
-      "price_high": 39453.05,
-      "price_mid": 39301.3075,
-      "distance_pct": -35.25,
-      "long_notional": 4158982.71281,
+      "price_low": 38987.670000000006,
+      "price_high": 39289.9,
+      "price_mid": 39138.785,
+      "distance_pct": -35.24999999999999,
+      "long_notional": 4260077.61601,
       "short_notional": 0.0
     },
     {
-      "price_low": 39453.05,
-      "price_high": 39756.535,
-      "price_mid": 39604.7925,
-      "distance_pct": -34.74999999999999,
-      "long_notional": 13069504.0196,
+      "price_low": 39289.9,
+      "price_high": 39592.130000000005,
+      "price_mid": 39441.015,
+      "distance_pct": -34.75,
+      "long_notional": 12593675.8596,
       "short_notional": 0.0
     },
     {
-      "price_low": 39756.535,
-      "price_high": 40060.020000000004,
-      "price_mid": 39908.277500000004,
-      "distance_pct": -34.24999999999999,
-      "long_notional": 24211800.0,
+      "price_low": 39592.130000000005,
+      "price_high": 39894.36,
+      "price_mid": 39743.245,
+      "distance_pct": -34.25,
+      "long_notional": 24134600.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 40060.020000000004,
-      "price_high": 40363.505000000005,
-      "price_mid": 40211.762500000004,
+      "price_low": 39894.36,
+      "price_high": 40196.590000000004,
+      "price_mid": 40045.475000000006,
       "distance_pct": -33.74999999999999,
-      "long_notional": 252510.11051,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 40363.505000000005,
-      "price_high": 40666.990000000005,
-      "price_mid": 40515.247500000005,
-      "distance_pct": -33.24999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 40666.990000000005,
-      "price_high": 40970.475000000006,
-      "price_mid": 40818.732500000006,
+      "price_low": 40196.590000000004,
+      "price_high": 40498.82000000001,
+      "price_mid": 40347.705,
+      "distance_pct": -33.24999999999999,
+      "long_notional": 251589.07312,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 40498.82000000001,
+      "price_high": 40801.05,
+      "price_mid": 40649.935000000005,
       "distance_pct": -32.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 40970.475000000006,
-      "price_high": 41273.96000000001,
-      "price_mid": 41122.217500000006,
-      "distance_pct": -32.24999999999999,
+      "price_low": 40801.05,
+      "price_high": 41103.28,
+      "price_mid": 40952.165,
+      "distance_pct": -32.25,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 41273.96000000001,
-      "price_high": 41577.44500000001,
-      "price_mid": 41425.70250000001,
-      "distance_pct": -31.74999999999999,
-      "long_notional": 5445900.0,
+      "price_low": 41103.28,
+      "price_high": 41405.51000000001,
+      "price_mid": 41254.395000000004,
+      "distance_pct": -31.749999999999996,
+      "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 41577.44500000001,
-      "price_high": 41880.93000000001,
-      "price_mid": 41729.18750000001,
+      "price_low": 41405.51000000001,
+      "price_high": 41707.740000000005,
+      "price_mid": 41556.62500000001,
       "distance_pct": -31.24999999999999,
+      "long_notional": 5430060.0,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 41707.740000000005,
+      "price_high": 42009.97,
+      "price_mid": 41858.855,
+      "distance_pct": -30.749999999999993,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 41880.93000000001,
-      "price_high": 42184.41500000001,
-      "price_mid": 42032.67250000001,
-      "distance_pct": -30.74999999999999,
-      "long_notional": 291715.93,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 42184.41500000001,
-      "price_high": 42487.90000000001,
-      "price_mid": 42336.15750000001,
+      "price_low": 42009.97,
+      "price_high": 42312.200000000004,
+      "price_mid": 42161.08500000001,
       "distance_pct": -30.24999999999999,
-      "long_notional": 4931660.4,
+      "long_notional": 290637.818,
       "short_notional": 0.0
     },
     {
-      "price_low": 42487.90000000001,
-      "price_high": 42791.38500000001,
-      "price_mid": 42639.64250000001,
-      "distance_pct": -29.749999999999986,
-      "long_notional": 0.0,
+      "price_low": 42312.200000000004,
+      "price_high": 42614.43000000001,
+      "price_mid": 42463.315,
+      "distance_pct": -29.75,
+      "long_notional": 4834880.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 42791.38500000001,
-      "price_high": 43094.87000000001,
-      "price_mid": 42943.12750000001,
-      "distance_pct": -29.249999999999982,
-      "long_notional": 7999649.0,
+      "price_low": 42614.43000000001,
+      "price_high": 42916.66,
+      "price_mid": 42765.545000000006,
+      "distance_pct": -29.249999999999993,
+      "long_notional": 302075.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 43094.87000000001,
-      "price_high": 43398.355,
-      "price_mid": 43246.6125,
+      "price_low": 42916.66,
+      "price_high": 43218.89,
+      "price_mid": 43067.775,
       "distance_pct": -28.749999999999996,
-      "long_notional": 359482.11293,
+      "long_notional": 7868297.055360001,
       "short_notional": 0.0
     },
     {
-      "price_low": 43398.355,
-      "price_high": 43701.840000000004,
-      "price_mid": 43550.0975,
+      "price_low": 43218.89,
+      "price_high": 43521.12000000001,
+      "price_mid": 43370.005000000005,
       "distance_pct": -28.249999999999993,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 43701.840000000004,
-      "price_high": 44005.32500000001,
-      "price_mid": 43853.582500000004,
-      "distance_pct": -27.749999999999993,
-      "long_notional": 2260292.54773,
+      "price_low": 43521.12000000001,
+      "price_high": 43823.350000000006,
+      "price_mid": 43672.23500000001,
+      "distance_pct": -27.749999999999986,
+      "long_notional": 2249421.92467,
       "short_notional": 0.0
     },
     {
-      "price_low": 44005.32500000001,
-      "price_high": 44308.810000000005,
-      "price_mid": 44157.067500000005,
-      "distance_pct": -27.24999999999999,
-      "long_notional": 2027818.5792,
+      "price_low": 43823.350000000006,
+      "price_high": 44125.58,
+      "price_mid": 43974.465000000004,
+      "distance_pct": -27.249999999999996,
+      "long_notional": 156941.2,
       "short_notional": 0.0
     },
     {
-      "price_low": 44308.810000000005,
-      "price_high": 44612.295000000006,
-      "price_mid": 44460.552500000005,
-      "distance_pct": -26.74999999999999,
-      "long_notional": 0.0,
+      "price_low": 44125.58,
+      "price_high": 44427.81,
+      "price_mid": 44276.695,
+      "distance_pct": -26.75,
+      "long_notional": 2018522.18136,
       "short_notional": 0.0
     },
     {
-      "price_low": 44612.295000000006,
-      "price_high": 44915.78,
-      "price_mid": 44764.037500000006,
-      "distance_pct": -26.24999999999999,
-      "long_notional": 20805.61552,
+      "price_low": 44427.81,
+      "price_high": 44730.04000000001,
+      "price_mid": 44578.925,
+      "distance_pct": -26.249999999999996,
+      "long_notional": 20715.78096,
       "short_notional": 0.0
     },
     {
-      "price_low": 44915.78,
-      "price_high": 45219.26500000001,
-      "price_mid": 45067.52250000001,
+      "price_low": 44730.04000000001,
+      "price_high": 45032.270000000004,
+      "price_mid": 44881.155000000006,
       "distance_pct": -25.74999999999999,
-      "long_notional": 21246750.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 45219.26500000001,
-      "price_high": 45522.75000000001,
-      "price_mid": 45371.00750000001,
-      "distance_pct": -25.24999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 45522.75000000001,
-      "price_high": 45826.235,
-      "price_mid": 45674.49250000001,
-      "distance_pct": -24.74999999999999,
-      "long_notional": 11942204.25668,
+      "price_low": 45032.270000000004,
+      "price_high": 45334.5,
+      "price_mid": 45183.385,
+      "distance_pct": -25.249999999999993,
+      "long_notional": 21151550.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 45826.235,
-      "price_high": 46129.72,
-      "price_mid": 45977.9775,
-      "distance_pct": -24.25,
-      "long_notional": 30320000.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 46129.72,
-      "price_high": 46433.205,
-      "price_mid": 46281.4625,
-      "distance_pct": -23.75,
-      "long_notional": 806696.09409,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 46433.205,
-      "price_high": 46736.69,
-      "price_mid": 46584.9475,
-      "distance_pct": -23.249999999999996,
+      "price_low": 45334.5,
+      "price_high": 45636.73000000001,
+      "price_mid": 45485.615000000005,
+      "distance_pct": -24.749999999999993,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 46736.69,
-      "price_high": 47040.175,
-      "price_mid": 46888.4325,
+      "price_low": 45636.73000000001,
+      "price_high": 45938.96000000001,
+      "price_mid": 45787.84500000001,
+      "distance_pct": -24.249999999999986,
+      "long_notional": 36398991.76307,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 45938.96000000001,
+      "price_high": 46241.19,
+      "price_mid": 46090.075000000004,
+      "distance_pct": -23.749999999999993,
+      "long_notional": 0.0,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 46241.19,
+      "price_high": 46543.420000000006,
+      "price_mid": 46392.30500000001,
+      "distance_pct": -23.249999999999986,
+      "long_notional": 802577.65419,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 46543.420000000006,
+      "price_high": 46845.65000000001,
+      "price_mid": 46694.535,
       "distance_pct": -22.749999999999996,
-      "long_notional": 101564.32824,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 47040.175,
-      "price_high": 47343.66,
-      "price_mid": 47191.9175,
-      "distance_pct": -22.249999999999996,
-      "long_notional": 82441085.01405999,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 47343.66,
-      "price_high": 47647.145000000004,
-      "price_mid": 47495.402500000004,
-      "distance_pct": -21.749999999999993,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 47647.145000000004,
-      "price_high": 47950.630000000005,
-      "price_mid": 47798.887500000004,
+      "price_low": 46845.65000000001,
+      "price_high": 47147.880000000005,
+      "price_mid": 46996.76500000001,
+      "distance_pct": -22.24999999999999,
+      "long_notional": 60434158.60072,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 47147.880000000005,
+      "price_high": 47450.11000000001,
+      "price_mid": 47298.99500000001,
+      "distance_pct": -21.749999999999982,
+      "long_notional": 21770620.716420002,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 47450.11000000001,
+      "price_high": 47752.340000000004,
+      "price_mid": 47601.225000000006,
       "distance_pct": -21.249999999999993,
+      "long_notional": 673727.6,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 47752.340000000004,
+      "price_high": 48054.57000000001,
+      "price_mid": 47903.455,
+      "distance_pct": -20.749999999999996,
+      "long_notional": 2376479.47186,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 48054.57000000001,
+      "price_high": 48356.8,
+      "price_mid": 48205.685000000005,
+      "distance_pct": -20.249999999999993,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 47950.630000000005,
-      "price_high": 48254.115000000005,
-      "price_mid": 48102.372500000005,
-      "distance_pct": -20.74999999999999,
-      "long_notional": 2388988.70782,
+      "price_low": 48356.8,
+      "price_high": 48659.030000000006,
+      "price_mid": 48507.91500000001,
+      "distance_pct": -19.749999999999986,
+      "long_notional": 1819555.01113,
       "short_notional": 0.0
     },
     {
-      "price_low": 48254.115000000005,
-      "price_high": 48557.600000000006,
-      "price_mid": 48405.857500000006,
-      "distance_pct": -20.24999999999999,
-      "long_notional": 263340.64225,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 48557.600000000006,
-      "price_high": 48861.08500000001,
-      "price_mid": 48709.342500000006,
-      "distance_pct": -19.74999999999999,
-      "long_notional": 1565260.01268,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 48861.08500000001,
-      "price_high": 49164.57000000001,
-      "price_mid": 49012.82750000001,
-      "distance_pct": -19.24999999999999,
+      "price_low": 48659.030000000006,
+      "price_high": 48961.26000000001,
+      "price_mid": 48810.145000000004,
+      "distance_pct": -19.249999999999993,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 49164.57000000001,
-      "price_high": 49468.05500000001,
-      "price_mid": 49316.31250000001,
+      "price_low": 48961.26000000001,
+      "price_high": 49263.490000000005,
+      "price_mid": 49112.37500000001,
       "distance_pct": -18.74999999999999,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 49468.05500000001,
-      "price_high": 49771.54000000001,
-      "price_mid": 49619.79750000001,
-      "distance_pct": -18.249999999999986,
-      "long_notional": 363546.0,
+      "price_low": 49263.490000000005,
+      "price_high": 49565.72,
+      "price_mid": 49414.605,
+      "distance_pct": -18.249999999999993,
+      "long_notional": 362214.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 49771.54000000001,
-      "price_high": 50075.02500000001,
-      "price_mid": 49923.28250000001,
-      "distance_pct": -17.749999999999986,
-      "long_notional": 8209953.25521,
+      "price_low": 49565.72,
+      "price_high": 49867.950000000004,
+      "price_mid": 49716.83500000001,
+      "distance_pct": -17.74999999999999,
+      "long_notional": 101882.71912,
       "short_notional": 0.0
     },
     {
-      "price_low": 50075.02500000001,
-      "price_high": 50378.51000000001,
-      "price_mid": 50226.76750000001,
-      "distance_pct": -17.249999999999986,
-      "long_notional": 60654.0,
+      "price_low": 49867.950000000004,
+      "price_high": 50170.18000000001,
+      "price_mid": 50019.065,
+      "distance_pct": -17.249999999999996,
+      "long_notional": 7856680.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 50378.51000000001,
-      "price_high": 50681.99500000001,
-      "price_mid": 50530.25250000001,
-      "distance_pct": -16.749999999999986,
-      "long_notional": 0.0,
+      "price_low": 50170.18000000001,
+      "price_high": 50472.41,
+      "price_mid": 50321.295000000006,
+      "distance_pct": -16.74999999999999,
+      "long_notional": 60405.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 50681.99500000001,
-      "price_high": 50985.48000000001,
-      "price_mid": 50833.73750000001,
-      "distance_pct": -16.249999999999982,
-      "long_notional": 28429695.619,
+      "price_low": 50472.41,
+      "price_high": 50774.64000000001,
+      "price_mid": 50623.52500000001,
+      "distance_pct": -16.249999999999986,
+      "long_notional": 28314931.31025,
       "short_notional": 0.0
     },
     {
-      "price_low": 50985.48000000001,
-      "price_high": 51288.965000000004,
-      "price_mid": 51137.2225,
-      "distance_pct": -15.749999999999995,
-      "long_notional": 7105350.41808,
+      "price_low": 50774.64000000001,
+      "price_high": 51076.87000000001,
+      "price_mid": 50925.755000000005,
+      "distance_pct": -15.749999999999991,
+      "long_notional": 6163237.91172,
       "short_notional": 0.0
     },
     {
-      "price_low": 51288.965000000004,
-      "price_high": 51592.45000000001,
-      "price_mid": 51440.707500000004,
-      "distance_pct": -15.249999999999995,
-      "long_notional": 1820385.0,
+      "price_low": 51076.87000000001,
+      "price_high": 51379.100000000006,
+      "price_mid": 51227.98500000001,
+      "distance_pct": -15.249999999999986,
+      "long_notional": 3424139.87067,
       "short_notional": 0.0
     },
     {
-      "price_low": 51592.45000000001,
-      "price_high": 51895.935000000005,
-      "price_mid": 51744.192500000005,
+      "price_low": 51379.100000000006,
+      "price_high": 51681.33,
+      "price_mid": 51530.215000000004,
       "distance_pct": -14.749999999999993,
-      "long_notional": 9957067.17861,
+      "long_notional": 906225.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 51895.935000000005,
-      "price_high": 52199.420000000006,
-      "price_mid": 52047.677500000005,
-      "distance_pct": -14.249999999999991,
-      "long_notional": 0.0,
+      "price_low": 51681.33,
+      "price_high": 51983.56000000001,
+      "price_mid": 51832.44500000001,
+      "distance_pct": -14.249999999999988,
+      "long_notional": 6426323.22658,
       "short_notional": 0.0
     },
     {
-      "price_low": 52199.420000000006,
-      "price_high": 52502.905000000006,
-      "price_mid": 52351.162500000006,
-      "distance_pct": -13.74999999999999,
-      "long_notional": 0.0,
+      "price_low": 51983.56000000001,
+      "price_high": 52285.79000000001,
+      "price_mid": 52134.67500000001,
+      "distance_pct": -13.749999999999984,
+      "long_notional": 967181.9235,
       "short_notional": 0.0
     },
     {
-      "price_low": 52502.905000000006,
-      "price_high": 52806.39000000001,
-      "price_mid": 52654.64750000001,
+      "price_low": 52285.79000000001,
+      "price_high": 52588.020000000004,
+      "price_mid": 52436.905000000006,
       "distance_pct": -13.24999999999999,
-      "long_notional": 2378298.32518,
+      "long_notional": 2160758.95046,
       "short_notional": 0.0
     },
     {
-      "price_low": 52806.39000000001,
-      "price_high": 53109.87500000001,
-      "price_mid": 52958.13250000001,
-      "distance_pct": -12.74999999999999,
-      "long_notional": 11574341.60728,
+      "price_low": 52588.020000000004,
+      "price_high": 52890.25,
+      "price_mid": 52739.135,
+      "distance_pct": -12.749999999999998,
+      "long_notional": 1107744.95096,
       "short_notional": 0.0
     },
     {
-      "price_low": 53109.87500000001,
-      "price_high": 53413.36,
-      "price_mid": 53261.61750000001,
-      "distance_pct": -12.249999999999988,
-      "long_notional": 1597727.3812,
+      "price_low": 52890.25,
+      "price_high": 53192.48000000001,
+      "price_mid": 53041.365000000005,
+      "distance_pct": -12.249999999999991,
+      "long_notional": 12191786.68322,
       "short_notional": 0.0
     },
     {
-      "price_low": 53413.36,
-      "price_high": 53716.845,
-      "price_mid": 53565.1025,
-      "distance_pct": -11.749999999999998,
-      "long_notional": 303545.0,
+      "price_low": 53192.48000000001,
+      "price_high": 53494.71000000001,
+      "price_mid": 53343.59500000001,
+      "distance_pct": -11.749999999999986,
+      "long_notional": 603740.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 53716.845,
-      "price_high": 54020.33000000001,
-      "price_mid": 53868.58750000001,
-      "distance_pct": -11.249999999999986,
-      "long_notional": 60721.0,
+      "price_low": 53494.71000000001,
+      "price_high": 53796.94,
+      "price_mid": 53645.825000000004,
+      "distance_pct": -11.249999999999993,
+      "long_notional": 508780.90180000005,
       "short_notional": 0.0
     },
     {
-      "price_low": 54020.33000000001,
-      "price_high": 54323.815,
-      "price_mid": 54172.07250000001,
-      "distance_pct": -10.749999999999984,
-      "long_notional": 60578.0,
+      "price_low": 53796.94,
+      "price_high": 54099.170000000006,
+      "price_mid": 53948.05500000001,
+      "distance_pct": -10.749999999999988,
+      "long_notional": 120759.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 54323.815,
-      "price_high": 54627.3,
-      "price_mid": 54475.5575,
+      "price_low": 54099.170000000006,
+      "price_high": 54401.40000000001,
+      "price_mid": 54250.285,
       "distance_pct": -10.249999999999995,
-      "long_notional": 2367612.52177,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 54627.3,
-      "price_high": 54930.785,
-      "price_mid": 54779.0425,
-      "distance_pct": -9.749999999999995,
-      "long_notional": 2851078.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 54930.785,
-      "price_high": 55234.270000000004,
-      "price_mid": 55082.527500000004,
-      "distance_pct": -9.249999999999995,
-      "long_notional": 258154.7888,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 55234.270000000004,
-      "price_high": 55537.755000000005,
-      "price_mid": 55386.012500000004,
-      "distance_pct": -8.749999999999993,
-      "long_notional": 4094846.36556,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 55537.755000000005,
-      "price_high": 55841.240000000005,
-      "price_mid": 55689.497500000005,
-      "distance_pct": -8.249999999999993,
-      "long_notional": 7590769.95397,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 55841.240000000005,
-      "price_high": 56144.725000000006,
-      "price_mid": 55992.982500000006,
-      "distance_pct": -7.74999999999999,
-      "long_notional": 2363420.80981,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 56144.725000000006,
-      "price_high": 56448.21000000001,
-      "price_mid": 56296.467500000006,
-      "distance_pct": -7.249999999999989,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 56448.21000000001,
-      "price_high": 56751.69500000001,
-      "price_mid": 56599.95250000001,
-      "distance_pct": -6.749999999999989,
-      "long_notional": 17219425.97468,
+      "price_low": 54401.40000000001,
+      "price_high": 54703.630000000005,
+      "price_mid": 54552.51500000001,
+      "distance_pct": -9.74999999999999,
+      "long_notional": 5167013.69721,
       "short_notional": 0.0
     },
     {
-      "price_low": 56751.69500000001,
-      "price_high": 57055.18000000001,
-      "price_mid": 56903.43750000001,
+      "price_low": 54703.630000000005,
+      "price_high": 55005.86000000001,
+      "price_mid": 54854.74500000001,
+      "distance_pct": -9.249999999999984,
+      "long_notional": 0.0,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 55005.86000000001,
+      "price_high": 55308.09000000001,
+      "price_mid": 55156.975000000006,
+      "distance_pct": -8.74999999999999,
+      "long_notional": 4015181.27871,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 55308.09000000001,
+      "price_high": 55610.32000000001,
+      "price_mid": 55459.20500000001,
+      "distance_pct": -8.249999999999986,
+      "long_notional": 159674.38043999998,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 55610.32000000001,
+      "price_high": 55912.55,
+      "price_mid": 55761.435000000005,
+      "distance_pct": -7.749999999999992,
+      "long_notional": 7693275.38584,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 55912.55,
+      "price_high": 56214.780000000006,
+      "price_mid": 56063.66500000001,
+      "distance_pct": -7.249999999999987,
+      "long_notional": 2113588.61896,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 56214.780000000006,
+      "price_high": 56517.01000000001,
+      "price_mid": 56365.895000000004,
+      "distance_pct": -6.749999999999994,
+      "long_notional": 0.0,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 56517.01000000001,
+      "price_high": 56819.240000000005,
+      "price_mid": 56668.12500000001,
       "distance_pct": -6.2499999999999885,
-      "long_notional": 1277590.95978,
+      "long_notional": 17136519.84673,
       "short_notional": 0.0
     },
     {
-      "price_low": 57055.18000000001,
-      "price_high": 57358.66500000001,
-      "price_mid": 57206.92250000001,
-      "distance_pct": -5.749999999999987,
-      "long_notional": 4720474.71014,
+      "price_low": 56819.240000000005,
+      "price_high": 57121.47000000001,
+      "price_mid": 56970.35500000001,
+      "distance_pct": -5.749999999999983,
+      "long_notional": 1272001.99576,
       "short_notional": 0.0
     },
     {
-      "price_low": 57358.66500000001,
-      "price_high": 57662.15000000001,
-      "price_mid": 57510.40750000001,
-      "distance_pct": -5.249999999999986,
-      "long_notional": 19983394.01354,
+      "price_low": 57121.47000000001,
+      "price_high": 57423.700000000004,
+      "price_mid": 57272.58500000001,
+      "distance_pct": -5.249999999999989,
+      "long_notional": 4712896.18267,
       "short_notional": 0.0
     },
     {
-      "price_low": 57662.15000000001,
-      "price_high": 57965.63500000001,
-      "price_mid": 57813.89250000001,
-      "distance_pct": -4.749999999999985,
-      "long_notional": 1104326.05584,
+      "price_low": 57423.700000000004,
+      "price_high": 57725.93000000001,
+      "price_mid": 57574.815,
+      "distance_pct": -4.749999999999996,
+      "long_notional": 19880804.437009998,
       "short_notional": 0.0
     },
     {
-      "price_low": 57965.63500000001,
-      "price_high": 58269.12,
-      "price_mid": 58117.3775,
-      "distance_pct": -4.2499999999999964,
-      "long_notional": 8119033.68769,
+      "price_low": 57725.93000000001,
+      "price_high": 58028.16,
+      "price_mid": 57877.045000000006,
+      "distance_pct": -4.24999999999999,
+      "long_notional": 1536449.4503600001,
       "short_notional": 0.0
     },
     {
-      "price_low": 58269.12,
-      "price_high": 58572.60500000001,
-      "price_mid": 58420.8625,
-      "distance_pct": -3.749999999999995,
-      "long_notional": 1847649.8228099998,
+      "price_low": 58028.16,
+      "price_high": 58330.39000000001,
+      "price_mid": 58179.27500000001,
+      "distance_pct": -3.7499999999999853,
+      "long_notional": 7664211.42867,
       "short_notional": 0.0
     },
     {
-      "price_low": 58572.60500000001,
-      "price_high": 58876.090000000004,
-      "price_mid": 58724.3475,
-      "distance_pct": -3.2499999999999947,
-      "long_notional": 4486854.94589,
+      "price_low": 58330.39000000001,
+      "price_high": 58632.62000000001,
+      "price_mid": 58481.505000000005,
+      "distance_pct": -3.2499999999999925,
+      "long_notional": 1839757.4301600002,
       "short_notional": 0.0
     },
     {
-      "price_low": 58876.090000000004,
-      "price_high": 59179.575000000004,
-      "price_mid": 59027.832500000004,
-      "distance_pct": -2.7499999999999933,
-      "long_notional": 7411659.86793,
+      "price_low": 58632.62000000001,
+      "price_high": 58934.850000000006,
+      "price_mid": 58783.73500000001,
+      "distance_pct": -2.7499999999999867,
+      "long_notional": 5340574.33947,
       "short_notional": 0.0
     },
     {
-      "price_low": 59179.575000000004,
-      "price_high": 59483.060000000005,
-      "price_mid": 59331.317500000005,
-      "distance_pct": -2.2499999999999925,
-      "long_notional": 2772791.59968,
+      "price_low": 58934.850000000006,
+      "price_high": 59237.08000000001,
+      "price_mid": 59085.96500000001,
+      "distance_pct": -2.249999999999982,
+      "long_notional": 6050454.59049,
       "short_notional": 0.0
     },
     {
-      "price_low": 59483.060000000005,
-      "price_high": 59786.545000000006,
-      "price_mid": 59634.802500000005,
-      "distance_pct": -1.7499999999999916,
-      "long_notional": 2149139.9710299997,
+      "price_low": 59237.08000000001,
+      "price_high": 59539.31000000001,
+      "price_mid": 59388.19500000001,
+      "distance_pct": -1.7499999999999885,
+      "long_notional": 2555679.81983,
       "short_notional": 0.0
     },
     {
-      "price_low": 59786.545000000006,
-      "price_high": 60090.030000000006,
-      "price_mid": 59938.287500000006,
-      "distance_pct": -1.2499999999999905,
-      "long_notional": 553299.07126,
+      "price_low": 59539.31000000001,
+      "price_high": 59841.54000000001,
+      "price_mid": 59690.42500000001,
+      "distance_pct": -1.2499999999999831,
+      "long_notional": 1092092.082,
       "short_notional": 0.0
     },
     {
-      "price_low": 60090.030000000006,
-      "price_high": 60393.51500000001,
-      "price_mid": 60241.77250000001,
-      "distance_pct": -0.7499999999999895,
+      "price_low": 59841.54000000001,
+      "price_high": 60143.770000000004,
+      "price_mid": 59992.655000000006,
+      "distance_pct": -0.7499999999999899,
+      "long_notional": 550608.52728,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 60143.770000000004,
+      "price_high": 60446.00000000001,
+      "price_mid": 60294.88500000001,
+      "distance_pct": -0.24999999999998462,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 60393.51500000001,
-      "price_high": 60697.00000000001,
-      "price_mid": 60545.25750000001,
-      "distance_pct": -0.2499999999999885,
+      "price_low": 60446.00000000001,
+      "price_high": 60748.23,
+      "price_mid": 60597.115000000005,
+      "distance_pct": 0.25000000000000866,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 60697.00000000001,
-      "price_high": 61000.48500000001,
-      "price_mid": 60848.74250000001,
-      "distance_pct": 0.25000000000001243,
+      "price_low": 60748.23,
+      "price_high": 61050.460000000014,
+      "price_mid": 60899.34500000001,
+      "distance_pct": 0.750000000000014,
       "long_notional": 0.0,
-      "short_notional": 2271385.39006
+      "short_notional": 2365429.18287
     },
     {
-      "price_low": 61000.48500000001,
-      "price_high": 61303.97000000001,
-      "price_mid": 61152.22750000001,
-      "distance_pct": 0.7500000000000134,
+      "price_low": 61050.460000000014,
+      "price_high": 61352.69000000001,
+      "price_mid": 61201.57500000001,
+      "distance_pct": 1.2500000000000193,
       "long_notional": 0.0,
-      "short_notional": 3271824.73581
+      "short_notional": 5006928.9247
     },
     {
-      "price_low": 61303.97000000001,
-      "price_high": 61607.45500000001,
-      "price_mid": 61455.71250000001,
-      "distance_pct": 1.2500000000000144,
+      "price_low": 61352.69000000001,
+      "price_high": 61654.920000000006,
+      "price_mid": 61503.80500000001,
+      "distance_pct": 1.7500000000000127,
       "long_notional": 0.0,
-      "short_notional": 12141689.7826
+      "short_notional": 13414109.315830002
     },
     {
-      "price_low": 61607.45500000001,
-      "price_high": 61910.94000000001,
-      "price_mid": 61759.19750000001,
-      "distance_pct": 1.7500000000000155,
+      "price_low": 61654.920000000006,
+      "price_high": 61957.15000000001,
+      "price_mid": 61806.035,
+      "distance_pct": 2.2500000000000058,
       "long_notional": 0.0,
-      "short_notional": 29247634.90547
+      "short_notional": 20227099.61771
     },
     {
-      "price_low": 61910.94000000001,
-      "price_high": 62214.42500000001,
-      "price_mid": 62062.68250000001,
-      "distance_pct": 2.2500000000000164,
+      "price_low": 61957.15000000001,
+      "price_high": 62259.380000000005,
+      "price_mid": 62108.26500000001,
+      "distance_pct": 2.750000000000011,
       "long_notional": 0.0,
-      "short_notional": 1176891.00012
+      "short_notional": 785187.0
     },
     {
-      "price_low": 62214.42500000001,
-      "price_high": 62517.91,
-      "price_mid": 62366.16750000001,
-      "distance_pct": 2.7500000000000173,
+      "price_low": 62259.380000000005,
+      "price_high": 62561.61000000001,
+      "price_mid": 62410.49500000001,
+      "distance_pct": 3.250000000000016,
       "long_notional": 0.0,
-      "short_notional": 3108710.05435
+      "short_notional": 3094898.9714099998
     },
     {
-      "price_low": 62517.91,
-      "price_high": 62821.395000000004,
-      "price_mid": 62669.652500000004,
-      "distance_pct": 3.250000000000006,
+      "price_low": 62561.61000000001,
+      "price_high": 62863.84000000001,
+      "price_mid": 62712.725000000006,
+      "distance_pct": 3.7500000000000098,
       "long_notional": 0.0,
-      "short_notional": 6505994.16219
+      "short_notional": 6738773.98974
     },
     {
-      "price_low": 62821.395000000004,
-      "price_high": 63124.880000000005,
-      "price_mid": 62973.137500000004,
-      "distance_pct": 3.7500000000000075,
+      "price_low": 62863.84000000001,
+      "price_high": 63166.07000000001,
+      "price_mid": 63014.95500000001,
+      "distance_pct": 4.250000000000015,
       "long_notional": 0.0,
-      "short_notional": 181878.0
+      "short_notional": 0.0
     },
     {
-      "price_low": 63124.880000000005,
-      "price_high": 63428.36500000001,
-      "price_mid": 63276.62250000001,
-      "distance_pct": 4.25000000000002,
+      "price_low": 63166.07000000001,
+      "price_high": 63468.30000000001,
+      "price_mid": 63317.18500000001,
+      "distance_pct": 4.75000000000002,
       "long_notional": 0.0,
-      "short_notional": 8461441.87419
+      "short_notional": 18130204.43111
     },
     {
-      "price_low": 63428.36500000001,
-      "price_high": 63731.85000000001,
-      "price_mid": 63580.10750000001,
-      "distance_pct": 4.750000000000021,
+      "price_low": 63468.30000000001,
+      "price_high": 63770.530000000006,
+      "price_mid": 63619.41500000001,
+      "distance_pct": 5.250000000000013,
       "long_notional": 0.0,
-      "short_notional": 9755048.83416
+      "short_notional": 604460.0
     },
     {
-      "price_low": 63731.85000000001,
-      "price_high": 64035.33500000001,
-      "price_mid": 63883.59250000001,
-      "distance_pct": 5.250000000000022,
+      "price_low": 63770.530000000006,
+      "price_high": 64072.76000000001,
+      "price_mid": 63921.645000000004,
+      "distance_pct": 5.750000000000006,
       "long_notional": 0.0,
-      "short_notional": 576385.8548
+      "short_notional": 2059002.321
     },
     {
-      "price_low": 64035.33500000001,
-      "price_high": 64338.82000000001,
-      "price_mid": 64187.07750000001,
-      "distance_pct": 5.7500000000000115,
-      "long_notional": 0.0,
-      "short_notional": 18218.7
-    },
-    {
-      "price_low": 64338.82000000001,
-      "price_high": 64642.30500000001,
-      "price_mid": 64490.56250000001,
+      "price_low": 64072.76000000001,
+      "price_high": 64374.990000000005,
+      "price_mid": 64223.87500000001,
       "distance_pct": 6.250000000000012,
       "long_notional": 0.0,
-      "short_notional": 1821600.0
+      "short_notional": 18126.9
     },
     {
-      "price_low": 64642.30500000001,
-      "price_high": 64945.79000000001,
-      "price_mid": 64794.04750000001,
-      "distance_pct": 6.750000000000013,
+      "price_low": 64374.990000000005,
+      "price_high": 64677.22,
+      "price_mid": 64526.105,
+      "distance_pct": 6.750000000000004,
       "long_notional": 0.0,
-      "short_notional": 55552005.14608
+      "short_notional": 1207360.0
     },
     {
-      "price_low": 64945.79000000001,
-      "price_high": 65249.27500000001,
-      "price_mid": 65097.53250000001,
-      "distance_pct": 7.250000000000013,
+      "price_low": 64677.22,
+      "price_high": 64979.45000000001,
+      "price_mid": 64828.33500000001,
+      "distance_pct": 7.250000000000011,
       "long_notional": 0.0,
-      "short_notional": 43595478.43671
+      "short_notional": 57112620.04762
     },
     {
-      "price_low": 65249.27500000001,
-      "price_high": 65552.76000000001,
-      "price_mid": 65401.01750000001,
+      "price_low": 64979.45000000001,
+      "price_high": 65281.68000000001,
+      "price_mid": 65130.56500000001,
       "distance_pct": 7.750000000000015,
       "long_notional": 0.0,
-      "short_notional": 732958.3054
+      "short_notional": 43232312.57486001
     },
     {
-      "price_low": 65552.76000000001,
-      "price_high": 65856.245,
-      "price_mid": 65704.5025,
-      "distance_pct": 8.250000000000004,
+      "price_low": 65281.68000000001,
+      "price_high": 65583.91,
+      "price_mid": 65432.795000000006,
+      "distance_pct": 8.250000000000009,
       "long_notional": 0.0,
-      "short_notional": 622136.77636
+      "short_notional": 1107689.82082
     },
     {
-      "price_low": 65856.245,
-      "price_high": 66159.73000000001,
-      "price_mid": 66007.9875,
-      "distance_pct": 8.750000000000005,
+      "price_low": 65583.91,
+      "price_high": 65886.14000000001,
+      "price_mid": 65735.02500000001,
+      "distance_pct": 8.750000000000014,
       "long_notional": 0.0,
-      "short_notional": 10894540.83803
+      "short_notional": 241708.0
     },
     {
-      "price_low": 66159.73000000001,
-      "price_high": 66463.21500000001,
-      "price_mid": 66311.4725,
-      "distance_pct": 9.250000000000005,
+      "price_low": 65886.14000000001,
+      "price_high": 66188.37,
+      "price_mid": 66037.255,
+      "distance_pct": 9.250000000000009,
       "long_notional": 0.0,
-      "short_notional": 0.0
+      "short_notional": 9940676.90269
     },
     {
-      "price_low": 66463.21500000001,
-      "price_high": 66766.70000000001,
-      "price_mid": 66614.95750000002,
-      "distance_pct": 9.75000000000003,
-      "long_notional": 0.0,
-      "short_notional": 6470638.2561
-    },
-    {
-      "price_low": 66766.70000000001,
-      "price_high": 67070.185,
-      "price_mid": 66918.4425,
-      "distance_pct": 10.250000000000007,
+      "price_low": 66188.37,
+      "price_high": 66490.6,
+      "price_mid": 66339.485,
+      "distance_pct": 9.75,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 67070.185,
-      "price_high": 67373.67000000001,
-      "price_mid": 67221.9275,
-      "distance_pct": 10.750000000000009,
+      "price_low": 66490.6,
+      "price_high": 66792.83000000002,
+      "price_mid": 66641.71500000001,
+      "distance_pct": 10.25000000000002,
+      "long_notional": 0.0,
+      "short_notional": 392708.5
+    },
+    {
+      "price_low": 66792.83000000002,
+      "price_high": 67095.06000000001,
+      "price_mid": 66943.945,
+      "distance_pct": 10.75000000000001,
+      "long_notional": 0.0,
+      "short_notional": 6048677.7813
+    },
+    {
+      "price_low": 67095.06000000001,
+      "price_high": 67397.29000000001,
+      "price_mid": 67246.17500000002,
+      "distance_pct": 11.25000000000003,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 67373.67000000001,
-      "price_high": 67677.155,
-      "price_mid": 67525.4125,
-      "distance_pct": 11.25000000000001,
+      "price_low": 67397.29000000001,
+      "price_high": 67699.52,
+      "price_mid": 67548.405,
+      "distance_pct": 11.749999999999998,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 67677.155,
-      "price_high": 67980.64000000001,
-      "price_mid": 67828.8975,
-      "distance_pct": 11.75000000000001,
+      "price_low": 67699.52,
+      "price_high": 68001.75,
+      "price_mid": 67850.63500000001,
+      "distance_pct": 12.250000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 67980.64000000001,
-      "price_high": 68284.125,
-      "price_mid": 68132.3825,
-      "distance_pct": 12.25000000000001,
+      "price_low": 68001.75,
+      "price_high": 68303.98000000001,
+      "price_mid": 68152.865,
+      "distance_pct": 12.750000000000009,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 68284.125,
-      "price_high": 68587.61000000002,
-      "price_mid": 68435.86750000001,
-      "distance_pct": 12.75000000000001,
+      "price_low": 68303.98000000001,
+      "price_high": 68606.21000000002,
+      "price_mid": 68455.09500000002,
+      "distance_pct": 13.250000000000025,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 68587.61000000002,
-      "price_high": 68891.095,
-      "price_mid": 68739.35250000001,
-      "distance_pct": 13.250000000000014,
+      "price_low": 68606.21000000002,
+      "price_high": 68908.44,
+      "price_mid": 68757.32500000001,
+      "distance_pct": 13.750000000000021,
       "long_notional": 0.0,
-      "short_notional": 31279844.18505
+      "short_notional": 31122527.53273
     },
     {
-      "price_low": 68891.095,
-      "price_high": 69194.58000000002,
-      "price_mid": 69042.83750000001,
-      "distance_pct": 13.750000000000014,
+      "price_low": 68908.44,
+      "price_high": 69210.67000000001,
+      "price_mid": 69059.55500000001,
+      "distance_pct": 14.250000000000012,
       "long_notional": 0.0,
-      "short_notional": 61860611.23622
+      "short_notional": 61577296.10101
     },
     {
-      "price_low": 69194.58000000002,
-      "price_high": 69498.065,
-      "price_mid": 69346.32250000001,
-      "distance_pct": 14.250000000000016,
+      "price_low": 69210.67000000001,
+      "price_high": 69512.90000000001,
+      "price_mid": 69361.785,
+      "distance_pct": 14.750000000000005,
       "long_notional": 0.0,
-      "short_notional": 1012637.6325
+      "short_notional": 1007352.45
     },
     {
-      "price_low": 69498.065,
-      "price_high": 69801.55000000002,
-      "price_mid": 69649.80750000001,
-      "distance_pct": 14.750000000000016,
-      "long_notional": 0.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 69801.55000000002,
-      "price_high": 70105.035,
-      "price_mid": 69953.29250000001,
-      "distance_pct": 15.250000000000016,
+      "price_low": 69512.90000000001,
+      "price_high": 69815.13,
+      "price_mid": 69664.01500000001,
+      "distance_pct": 15.250000000000021,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 70105.035,
-      "price_high": 70408.52,
-      "price_mid": 70256.7775,
-      "distance_pct": 15.749999999999995,
+      "price_low": 69815.13,
+      "price_high": 70117.36000000002,
+      "price_mid": 69966.24500000001,
+      "distance_pct": 15.750000000000016,
       "long_notional": 0.0,
-      "short_notional": 3039271.9393700003
+      "short_notional": 70529.03424
     },
     {
-      "price_low": 70408.52,
-      "price_high": 70712.005,
-      "price_mid": 70560.26250000001,
-      "distance_pct": 16.25000000000002,
+      "price_low": 70117.36000000002,
+      "price_high": 70419.59000000001,
+      "price_mid": 70268.475,
+      "distance_pct": 16.250000000000007,
       "long_notional": 0.0,
-      "short_notional": 39614000.995529994
+      "short_notional": 3024904.80396
     },
     {
-      "price_low": 70712.005,
-      "price_high": 71015.49000000002,
-      "price_mid": 70863.74750000001,
-      "distance_pct": 16.75000000000002,
+      "price_low": 70419.59000000001,
+      "price_high": 70721.82,
+      "price_mid": 70570.70500000002,
+      "distance_pct": 16.750000000000025,
       "long_notional": 0.0,
-      "short_notional": 4520695.7412
+      "short_notional": 804422.85345
     },
     {
-      "price_low": 71015.49000000002,
-      "price_high": 71318.975,
-      "price_mid": 71167.23250000001,
+      "price_low": 70721.82,
+      "price_high": 71024.05000000002,
+      "price_mid": 70872.93500000001,
       "distance_pct": 17.25000000000002,
       "long_notional": 0.0,
-      "short_notional": 18220500.60735
+      "short_notional": 38619920.7548
     },
     {
-      "price_low": 71318.975,
-      "price_high": 71622.46000000002,
-      "price_mid": 71470.71750000001,
-      "distance_pct": 17.75000000000002,
+      "price_low": 71024.05000000002,
+      "price_high": 71326.28,
+      "price_mid": 71175.16500000001,
+      "distance_pct": 17.750000000000014,
       "long_notional": 0.0,
-      "short_notional": 8542137.33958
+      "short_notional": 22562891.601559997
     },
     {
-      "price_low": 71622.46000000002,
-      "price_high": 71925.945,
-      "price_mid": 71774.20250000001,
-      "distance_pct": 18.25000000000002,
+      "price_low": 71326.28,
+      "price_high": 71628.51000000001,
+      "price_mid": 71477.395,
+      "distance_pct": 18.250000000000007,
       "long_notional": 0.0,
-      "short_notional": 677745.30044
+      "short_notional": 8508454.16616
     },
     {
-      "price_low": 71925.945,
-      "price_high": 72229.43000000001,
-      "price_mid": 72077.6875,
+      "price_low": 71628.51000000001,
+      "price_high": 71930.74,
+      "price_mid": 71779.625,
       "distance_pct": 18.75,
       "long_notional": 0.0,
-      "short_notional": 3551598.73271
+      "short_notional": 674655.57084
     },
     {
-      "price_low": 72229.43000000001,
-      "price_high": 72532.91500000001,
-      "price_mid": 72381.17250000002,
-      "distance_pct": 19.250000000000025,
+      "price_low": 71930.74,
+      "price_high": 72232.97000000002,
+      "price_mid": 72081.85500000001,
+      "distance_pct": 19.250000000000018,
       "long_notional": 0.0,
-      "short_notional": 242424.0
+      "short_notional": 3537477.41724
     },
     {
-      "price_low": 72532.91500000001,
-      "price_high": 72836.40000000001,
-      "price_mid": 72684.6575,
-      "distance_pct": 19.75,
+      "price_low": 72232.97000000002,
+      "price_high": 72535.20000000001,
+      "price_mid": 72384.08500000002,
+      "distance_pct": 19.750000000000036,
       "long_notional": 0.0,
-      "short_notional": 9420891.3826
+      "short_notional": 241424.0
     },
     {
-      "price_low": 72836.40000000001,
-      "price_high": 73139.88500000001,
-      "price_mid": 72988.14250000002,
-      "distance_pct": 20.250000000000025,
+      "price_low": 72535.20000000001,
+      "price_high": 72837.43000000001,
+      "price_mid": 72686.315,
+      "distance_pct": 20.250000000000004,
       "long_notional": 0.0,
-      "short_notional": 630237.44875
+      "short_notional": 9382027.5384
     },
     {
-      "price_low": 73139.88500000001,
-      "price_high": 73443.37,
-      "price_mid": 73291.6275,
-      "distance_pct": 20.750000000000004,
+      "price_low": 72837.43000000001,
+      "price_high": 73139.66,
+      "price_mid": 72988.54500000001,
+      "distance_pct": 20.75000000000002,
       "long_notional": 0.0,
-      "short_notional": 1516475.0
+      "short_notional": 1510575.0
     },
     {
-      "price_low": 73443.37,
-      "price_high": 73746.85500000001,
-      "price_mid": 73595.1125,
-      "distance_pct": 21.250000000000004,
+      "price_low": 73139.66,
+      "price_high": 73441.89000000001,
+      "price_mid": 73290.77500000001,
+      "distance_pct": 21.250000000000014,
       "long_notional": 0.0,
-      "short_notional": 0.0
+      "short_notional": 626937.06985
     },
     {
-      "price_low": 73746.85500000001,
-      "price_high": 74050.34000000001,
-      "price_mid": 73898.5975,
+      "price_low": 73441.89000000001,
+      "price_high": 73744.12000000001,
+      "price_mid": 73593.005,
       "distance_pct": 21.750000000000007,
       "long_notional": 0.0,
-      "short_notional": 73977.7107
+      "short_notional": 0.0
     },
     {
-      "price_low": 74050.34000000001,
-      "price_high": 74353.82500000001,
-      "price_mid": 74202.08250000002,
-      "distance_pct": 22.250000000000032,
-      "long_notional": 0.0,
-      "short_notional": 993982.72184
-    },
-    {
-      "price_low": 74353.82500000001,
-      "price_high": 74657.31000000001,
-      "price_mid": 74505.5675,
-      "distance_pct": 22.750000000000007,
+      "price_low": 73744.12000000001,
+      "price_high": 74046.35,
+      "price_mid": 73895.23500000002,
+      "distance_pct": 22.250000000000025,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 74657.31000000001,
-      "price_high": 74960.79500000001,
-      "price_mid": 74809.05250000002,
-      "distance_pct": 23.250000000000032,
+      "price_low": 74046.35,
+      "price_high": 74348.58000000002,
+      "price_mid": 74197.46500000001,
+      "distance_pct": 22.750000000000018,
       "long_notional": 0.0,
-      "short_notional": 18218682.626390003
+      "short_notional": 73760.09324
     },
     {
-      "price_low": 74960.79500000001,
-      "price_high": 75264.28,
-      "price_mid": 75112.5375,
-      "distance_pct": 23.75000000000001,
+      "price_low": 74348.58000000002,
+      "price_high": 74650.81000000001,
+      "price_mid": 74499.695,
+      "distance_pct": 23.25000000000001,
+      "long_notional": 0.0,
+      "short_notional": 989588.9208
+    },
+    {
+      "price_low": 74650.81000000001,
+      "price_high": 74953.04000000001,
+      "price_mid": 74801.92500000002,
+      "distance_pct": 23.75000000000003,
+      "long_notional": 0.0,
+      "short_notional": 18137104.40635
+    },
+    {
+      "price_low": 74953.04000000001,
+      "price_high": 75255.27000000002,
+      "price_mid": 75104.15500000001,
+      "distance_pct": 24.25000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 75264.28,
-      "price_high": 75567.76500000001,
-      "price_mid": 75416.0225,
-      "distance_pct": 24.25000000000001,
+      "price_low": 75255.27000000002,
+      "price_high": 75557.5,
+      "price_mid": 75406.38500000001,
+      "distance_pct": 24.750000000000018,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 75567.76500000001,
-      "price_high": 75871.25,
-      "price_mid": 75719.5075,
-      "distance_pct": 24.75000000000001,
-      "long_notional": 0.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 75871.25,
-      "price_high": 76174.73500000002,
-      "price_mid": 76022.99250000001,
+      "price_low": 75557.5,
+      "price_high": 75859.73000000001,
+      "price_mid": 75708.615,
       "distance_pct": 25.25000000000001,
       "long_notional": 0.0,
-      "short_notional": 1818750.0
+      "short_notional": 0.0
     },
     {
-      "price_low": 76174.73500000002,
-      "price_high": 76478.22,
-      "price_mid": 76326.47750000001,
-      "distance_pct": 25.75000000000001,
+      "price_low": 75859.73000000001,
+      "price_high": 76161.96000000002,
+      "price_mid": 76010.84500000002,
+      "distance_pct": 25.75000000000003,
+      "long_notional": 0.0,
+      "short_notional": 1811010.0
+    },
+    {
+      "price_low": 76161.96000000002,
+      "price_high": 76464.19,
+      "price_mid": 76313.07500000001,
+      "distance_pct": 26.250000000000018,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 76478.22,
-      "price_high": 76781.70500000002,
-      "price_mid": 76629.96250000001,
-      "distance_pct": 26.25000000000001,
-      "long_notional": 0.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 76781.70500000002,
-      "price_high": 77085.19,
-      "price_mid": 76933.44750000001,
+      "price_low": 76464.19,
+      "price_high": 76766.42000000001,
+      "price_mid": 76615.30500000001,
       "distance_pct": 26.750000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 77085.19,
-      "price_high": 77388.67500000002,
-      "price_mid": 77236.93250000001,
-      "distance_pct": 27.250000000000018,
+      "price_low": 76766.42000000001,
+      "price_high": 77068.65000000001,
+      "price_mid": 76917.535,
+      "distance_pct": 27.250000000000007,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 77388.67500000002,
-      "price_high": 77692.16,
-      "price_mid": 77540.41750000001,
-      "distance_pct": 27.750000000000018,
+      "price_low": 77068.65000000001,
+      "price_high": 77370.88,
+      "price_mid": 77219.76500000001,
+      "distance_pct": 27.750000000000025,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 77692.16,
-      "price_high": 77995.645,
-      "price_mid": 77843.9025,
-      "distance_pct": 28.249999999999993,
-      "long_notional": 0.0,
-      "short_notional": 10946398.28212
-    },
-    {
-      "price_low": 77995.645,
-      "price_high": 78299.13,
-      "price_mid": 78147.38750000001,
-      "distance_pct": 28.75000000000002,
-      "long_notional": 0.0,
-      "short_notional": 370397.80557
-    },
-    {
-      "price_low": 78299.13,
-      "price_high": 78602.61500000002,
-      "price_mid": 78450.87250000001,
-      "distance_pct": 29.25000000000002,
+      "price_low": 77370.88,
+      "price_high": 77673.11000000002,
+      "price_mid": 77521.99500000001,
+      "distance_pct": 28.250000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 78602.61500000002,
-      "price_high": 78906.1,
-      "price_mid": 78754.35750000001,
+      "price_low": 77673.11000000002,
+      "price_high": 77975.34000000001,
+      "price_mid": 77824.225,
+      "distance_pct": 28.750000000000007,
+      "long_notional": 0.0,
+      "short_notional": 10901343.7594
+    },
+    {
+      "price_low": 77975.34000000001,
+      "price_high": 78277.57,
+      "price_mid": 78126.45500000002,
+      "distance_pct": 29.250000000000025,
+      "long_notional": 0.0,
+      "short_notional": 368956.73529
+    },
+    {
+      "price_low": 78277.57,
+      "price_high": 78579.80000000002,
+      "price_mid": 78428.68500000001,
       "distance_pct": 29.75000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 78906.1,
-      "price_high": 79209.58500000002,
-      "price_mid": 79057.84250000001,
-      "distance_pct": 30.25000000000002,
+      "price_low": 78579.80000000002,
+      "price_high": 78882.03000000001,
+      "price_mid": 78730.91500000001,
+      "distance_pct": 30.250000000000014,
       "long_notional": 0.0,
-      "short_notional": 84077.21102
+      "short_notional": 0.0
     },
     {
-      "price_low": 79209.58500000002,
-      "price_high": 79513.07,
-      "price_mid": 79361.32750000001,
-      "distance_pct": 30.75000000000002,
+      "price_low": 78882.03000000001,
+      "price_high": 79184.26000000001,
+      "price_mid": 79033.14500000002,
+      "distance_pct": 30.750000000000032,
       "long_notional": 0.0,
-      "short_notional": 15382771.621949999
+      "short_notional": 0.0
     },
     {
-      "price_low": 79513.07,
-      "price_high": 79816.55500000001,
-      "price_mid": 79664.8125,
+      "price_low": 79184.26000000001,
+      "price_high": 79486.49,
+      "price_mid": 79335.375,
       "distance_pct": 31.25,
       "long_notional": 0.0,
-      "short_notional": 46530942.09627
+      "short_notional": 15315046.70687
     },
     {
-      "price_low": 79816.55500000001,
-      "price_high": 80120.04000000001,
-      "price_mid": 79968.29750000002,
-      "distance_pct": 31.75000000000002,
+      "price_low": 79486.49,
+      "price_high": 79788.72000000002,
+      "price_mid": 79637.60500000001,
+      "distance_pct": 31.750000000000018,
+      "long_notional": 0.0,
+      "short_notional": 46296540.168239996
+    },
+    {
+      "price_low": 79788.72000000002,
+      "price_high": 80090.95000000001,
+      "price_mid": 79939.83500000002,
+      "distance_pct": 32.250000000000036,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 80120.04000000001,
-      "price_high": 80423.52500000001,
-      "price_mid": 80271.7825,
-      "distance_pct": 32.25,
-      "long_notional": 0.0,
-      "short_notional": 151447.5
-    },
-    {
-      "price_low": 80423.52500000001,
-      "price_high": 80727.01000000001,
-      "price_mid": 80575.26750000002,
+      "price_low": 80090.95000000001,
+      "price_high": 80393.18000000002,
+      "price_mid": 80242.06500000002,
       "distance_pct": 32.75000000000003,
       "long_notional": 0.0,
-      "short_notional": 1304815.2948
+      "short_notional": 150857.5
     },
     {
-      "price_low": 80727.01000000001,
-      "price_high": 81030.495,
-      "price_mid": 80878.7525,
-      "distance_pct": 33.25,
-      "long_notional": 0.0,
-      "short_notional": 12115800.0
-    },
-    {
-      "price_low": 81030.495,
-      "price_high": 81333.98000000001,
-      "price_mid": 81182.2375,
-      "distance_pct": 33.75,
+      "price_low": 80393.18000000002,
+      "price_high": 80695.41,
+      "price_mid": 80544.29500000001,
+      "distance_pct": 33.25000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 81333.98000000001,
-      "price_high": 81637.46500000001,
-      "price_mid": 81485.7225,
+      "price_low": 80695.41,
+      "price_high": 80997.64000000001,
+      "price_mid": 80846.52500000001,
+      "distance_pct": 33.750000000000014,
+      "long_notional": 0.0,
+      "short_notional": 12068400.0
+    },
+    {
+      "price_low": 80997.64000000001,
+      "price_high": 81299.87000000001,
+      "price_mid": 81148.755,
       "distance_pct": 34.25000000000001,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 81637.46500000001,
-      "price_high": 81940.95000000001,
-      "price_mid": 81789.20750000002,
+      "price_low": 81299.87000000001,
+      "price_high": 81602.1,
+      "price_mid": 81450.98500000002,
       "distance_pct": 34.75000000000003,
       "long_notional": 0.0,
-      "short_notional": 2463942.5369800003
+      "short_notional": 0.0
     },
     {
-      "price_low": 81940.95000000001,
-      "price_high": 82244.43500000001,
-      "price_mid": 82092.6925,
-      "distance_pct": 35.25000000000001,
+      "price_low": 81602.1,
+      "price_high": 81904.33000000002,
+      "price_mid": 81753.21500000001,
+      "distance_pct": 35.25000000000002,
+      "long_notional": 0.0,
+      "short_notional": 2452034.99147
+    },
+    {
+      "price_low": 81904.33000000002,
+      "price_high": 82206.56000000001,
+      "price_mid": 82055.445,
+      "distance_pct": 35.75000000000001,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 82244.43500000001,
-      "price_high": 82547.92000000001,
-      "price_mid": 82396.17750000002,
-      "distance_pct": 35.75000000000003,
+      "price_low": 82206.56000000001,
+      "price_high": 82508.79000000001,
+      "price_mid": 82357.67500000002,
+      "distance_pct": 36.25000000000003,
       "long_notional": 0.0,
-      "short_notional": 7377996.53492
+      "short_notional": 7928967.50976
     },
     {
-      "price_low": 82547.92000000001,
-      "price_high": 82851.405,
-      "price_mid": 82699.6625,
-      "distance_pct": 36.25000000000001,
-      "long_notional": 0.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 82851.405,
-      "price_high": 83154.89000000001,
-      "price_mid": 83003.1475,
-      "distance_pct": 36.75000000000001,
+      "price_low": 82508.79000000001,
+      "price_high": 82811.02000000002,
+      "price_mid": 82659.90500000001,
+      "distance_pct": 36.75000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 83154.89000000001,
-      "price_high": 83458.375,
-      "price_mid": 83306.6325,
+      "price_low": 82811.02000000002,
+      "price_high": 83113.25,
+      "price_mid": 82962.13500000001,
       "distance_pct": 37.250000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 83458.375,
-      "price_high": 83761.86000000002,
-      "price_mid": 83610.11750000001,
+      "price_low": 83113.25,
+      "price_high": 83415.48000000001,
+      "price_mid": 83264.365,
       "distance_pct": 37.750000000000014,
-      "long_notional": 0.0,
-      "short_notional": 300819.04
-    },
-    {
-      "price_low": 83761.86000000002,
-      "price_high": 84065.34500000002,
-      "price_mid": 83913.60250000001,
-      "distance_pct": 38.250000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 84065.34500000002,
-      "price_high": 84368.83000000002,
-      "price_mid": 84217.08750000002,
-      "distance_pct": 38.75000000000004,
+      "price_low": 83415.48000000001,
+      "price_high": 83717.71000000002,
+      "price_mid": 83566.59500000002,
+      "distance_pct": 38.25000000000003,
       "long_notional": 0.0,
-      "short_notional": 1611965.7033600002
+      "short_notional": 299703.04
     },
     {
-      "price_low": 84368.83000000002,
-      "price_high": 84672.315,
-      "price_mid": 84520.57250000001,
+      "price_low": 83717.71000000002,
+      "price_high": 84019.94,
+      "price_mid": 83868.82500000001,
+      "distance_pct": 38.750000000000014,
+      "long_notional": 0.0,
+      "short_notional": 1118121.40485
+    },
+    {
+      "price_low": 84019.94,
+      "price_high": 84322.17000000001,
+      "price_mid": 84171.05500000001,
       "distance_pct": 39.250000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 84672.315,
-      "price_high": 84975.80000000002,
-      "price_mid": 84824.05750000001,
-      "distance_pct": 39.75000000000002,
+      "price_low": 84322.17000000001,
+      "price_high": 84624.40000000001,
+      "price_mid": 84473.285,
+      "distance_pct": 39.75000000000001,
       "long_notional": 0.0,
-      "short_notional": 0.0
+      "short_notional": 1069366.2252
     },
     {
-      "price_low": 84975.80000000002,
-      "price_high": 85279.285,
-      "price_mid": 85127.54250000001,
+      "price_low": 84624.40000000001,
+      "price_high": 84926.63,
+      "price_mid": 84775.51500000001,
       "distance_pct": 40.25000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 85279.285,
-      "price_high": 85582.77000000002,
-      "price_mid": 85431.02750000001,
-      "distance_pct": 40.75000000000002,
+      "price_low": 84926.63,
+      "price_high": 85228.86000000002,
+      "price_mid": 85077.74500000001,
+      "distance_pct": 40.750000000000014,
       "long_notional": 0.0,
-      "short_notional": 4931751.90248
+      "short_notional": 5987310.49012
     },
     {
-      "price_low": 85582.77000000002,
-      "price_high": 85886.255,
-      "price_mid": 85734.51250000001,
-      "distance_pct": 41.25000000000002,
+      "price_low": 85228.86000000002,
+      "price_high": 85531.09000000001,
+      "price_mid": 85379.975,
+      "distance_pct": 41.25000000000001,
       "long_notional": 0.0,
-      "short_notional": 1588705.8096
+      "short_notional": 3152669.46919
     },
     {
-      "price_low": 85886.255,
-      "price_high": 86189.74000000002,
-      "price_mid": 86037.99750000001,
-      "distance_pct": 41.75000000000002,
+      "price_low": 85531.09000000001,
+      "price_high": 85833.32,
+      "price_mid": 85682.20500000002,
+      "distance_pct": 41.75000000000003,
       "long_notional": 0.0,
-      "short_notional": 3209352.78812
+      "short_notional": 3469845.67244
     },
     {
-      "price_low": 86189.74000000002,
-      "price_high": 86493.225,
-      "price_mid": 86341.48250000001,
+      "price_low": 85833.32,
+      "price_high": 86135.55000000002,
+      "price_mid": 85984.43500000001,
       "distance_pct": 42.25000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 86493.225,
-      "price_high": 86796.71000000002,
-      "price_mid": 86644.96750000001,
-      "distance_pct": 42.75000000000002,
+      "price_low": 86135.55000000002,
+      "price_high": 86437.78000000001,
+      "price_mid": 86286.66500000001,
+      "distance_pct": 42.750000000000014,
+      "long_notional": 0.0,
+      "short_notional": 3192548.5106
+    },
+    {
+      "price_low": 86437.78000000001,
+      "price_high": 86740.01000000001,
+      "price_mid": 86588.89500000002,
+      "distance_pct": 43.250000000000036,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 86796.71000000002,
-      "price_high": 87100.195,
-      "price_mid": 86948.45250000001,
-      "distance_pct": 43.25000000000002,
-      "long_notional": 0.0,
-      "short_notional": 7397925.203620001
-    },
-    {
-      "price_low": 87100.195,
-      "price_high": 87403.68000000001,
-      "price_mid": 87251.9375,
+      "price_low": 86740.01000000001,
+      "price_high": 87042.24,
+      "price_mid": 86891.125,
       "distance_pct": 43.75,
       "long_notional": 0.0,
-      "short_notional": 0.0
+      "short_notional": 1974940.10103
     },
     {
-      "price_low": 87403.68000000001,
-      "price_high": 87707.16500000001,
-      "price_mid": 87555.42250000002,
-      "distance_pct": 44.25000000000002,
+      "price_low": 87042.24,
+      "price_high": 87344.47000000002,
+      "price_mid": 87193.35500000001,
+      "distance_pct": 44.250000000000014,
+      "long_notional": 0.0,
+      "short_notional": 5387755.041959999
+    },
+    {
+      "price_low": 87344.47000000002,
+      "price_high": 87646.70000000001,
+      "price_mid": 87495.58500000002,
+      "distance_pct": 44.750000000000036,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 87707.16500000001,
-      "price_high": 88010.65000000001,
-      "price_mid": 87858.9075,
-      "distance_pct": 44.75,
-      "long_notional": 0.0,
-      "short_notional": 0.0
-    },
-    {
-      "price_low": 88010.65000000001,
-      "price_high": 88314.13500000001,
-      "price_mid": 88162.39250000002,
+      "price_low": 87646.70000000001,
+      "price_high": 87948.93000000002,
+      "price_mid": 87797.81500000002,
       "distance_pct": 45.25000000000003,
       "long_notional": 0.0,
-      "short_notional": 29082.19468
+      "short_notional": 0.0
     },
     {
-      "price_low": 88314.13500000001,
-      "price_high": 88617.62000000002,
-      "price_mid": 88465.87750000002,
-      "distance_pct": 45.75000000000003,
+      "price_low": 87948.93000000002,
+      "price_high": 88251.16,
+      "price_mid": 88100.04500000001,
+      "distance_pct": 45.75000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 88617.62000000002,
-      "price_high": 88921.10500000001,
-      "price_mid": 88769.36250000002,
-      "distance_pct": 46.25000000000003,
+      "price_low": 88251.16,
+      "price_high": 88553.39000000001,
+      "price_mid": 88402.27500000001,
+      "distance_pct": 46.250000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 88921.10500000001,
-      "price_high": 89224.59000000001,
-      "price_mid": 89072.8475,
+      "price_low": 88553.39000000001,
+      "price_high": 88855.62000000001,
+      "price_mid": 88704.505,
       "distance_pct": 46.75000000000001,
       "long_notional": 0.0,
-      "short_notional": 424770.03405
+      "short_notional": 0.0
     },
     {
-      "price_low": 89224.59000000001,
-      "price_high": 89528.07500000001,
-      "price_mid": 89376.33250000002,
+      "price_low": 88855.62000000001,
+      "price_high": 89157.85,
+      "price_mid": 89006.73500000002,
       "distance_pct": 47.25000000000003,
       "long_notional": 0.0,
-      "short_notional": 3617896.28288
+      "short_notional": 422964.02115
     },
     {
-      "price_low": 89528.07500000001,
-      "price_high": 89831.56000000001,
-      "price_mid": 89679.8175,
-      "distance_pct": 47.75000000000001,
+      "price_low": 89157.85,
+      "price_high": 89460.08000000002,
+      "price_mid": 89308.96500000001,
+      "distance_pct": 47.75000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 89831.56000000001,
-      "price_high": 90135.04500000001,
-      "price_mid": 89983.30250000002,
-      "distance_pct": 48.25000000000003,
+      "price_low": 89460.08000000002,
+      "price_high": 89762.31,
+      "price_mid": 89611.195,
+      "distance_pct": 48.25000000000001,
       "long_notional": 0.0,
-      "short_notional": 0.0
+      "short_notional": 3598594.79936
     },
     {
-      "price_low": 90135.04500000001,
-      "price_high": 90438.53000000001,
-      "price_mid": 90286.7875,
+      "price_low": 89762.31,
+      "price_high": 90064.54000000001,
+      "price_mid": 89913.425,
       "distance_pct": 48.75000000000001,
       "long_notional": 0.0,
-      "short_notional": 753541.91262
+      "short_notional": 0.0
     },
     {
-      "price_low": 90438.53000000001,
-      "price_high": 90742.01500000001,
-      "price_mid": 90590.27250000002,
-      "distance_pct": 49.250000000000036,
+      "price_low": 90064.54000000001,
+      "price_high": 90366.77000000002,
+      "price_mid": 90215.65500000001,
+      "distance_pct": 49.25000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 90742.01500000001,
-      "price_high": 91045.50000000001,
-      "price_mid": 90893.7575,
+      "price_low": 90366.77000000002,
+      "price_high": 90669.0,
+      "price_mid": 90517.88500000001,
       "distance_pct": 49.750000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 91045.50000000001,
-      "price_high": 91348.98500000002,
-      "price_mid": 91197.24250000002,
-      "distance_pct": 50.25000000000004,
+      "price_low": 90669.0,
+      "price_high": 90971.23000000001,
+      "price_mid": 90820.115,
+      "distance_pct": 50.25000000000001,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 91348.98500000002,
-      "price_high": 91652.47000000002,
-      "price_mid": 91500.72750000001,
-      "distance_pct": 50.750000000000014,
+      "price_low": 90971.23000000001,
+      "price_high": 91273.46000000002,
+      "price_mid": 91122.34500000002,
+      "distance_pct": 50.75000000000003,
       "long_notional": 0.0,
-      "short_notional": 181926.0
+      "short_notional": 0.0
     },
     {
-      "price_low": 91652.47000000002,
-      "price_high": 91955.955,
-      "price_mid": 91804.21250000001,
+      "price_low": 91273.46000000002,
+      "price_high": 91575.69,
+      "price_mid": 91424.57500000001,
       "distance_pct": 51.250000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 91955.955,
-      "price_high": 92259.44,
-      "price_mid": 92107.69750000001,
-      "distance_pct": 51.75000000000002,
-      "long_notional": 0.0,
-      "short_notional": 5112995.75572
-    },
-    {
-      "price_low": 92259.44,
-      "price_high": 92562.92500000002,
-      "price_mid": 92411.18250000001,
-      "distance_pct": 52.25000000000002,
+      "price_low": 91575.69,
+      "price_high": 91877.92000000001,
+      "price_mid": 91726.80500000001,
+      "distance_pct": 51.75000000000001,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 92562.92500000002,
-      "price_high": 92866.41000000002,
-      "price_mid": 92714.66750000001,
+      "price_low": 91877.92000000001,
+      "price_high": 92180.15000000002,
+      "price_mid": 92029.03500000002,
+      "distance_pct": 52.25000000000003,
+      "long_notional": 0.0,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 92180.15000000002,
+      "price_high": 92482.38,
+      "price_mid": 92331.26500000001,
       "distance_pct": 52.75000000000002,
       "long_notional": 0.0,
-      "short_notional": 0.0
+      "short_notional": 5269759.58309
     },
     {
-      "price_low": 92866.41000000002,
-      "price_high": 93169.89500000002,
-      "price_mid": 93018.15250000003,
-      "distance_pct": 53.25000000000004,
-      "long_notional": 0.0,
-      "short_notional": 216784.98045
-    },
-    {
-      "price_low": 93169.89500000002,
-      "price_high": 93473.38,
-      "price_mid": 93321.63750000001,
-      "distance_pct": 53.75000000000002,
+      "price_low": 92482.38,
+      "price_high": 92784.61000000002,
+      "price_mid": 92633.49500000001,
+      "distance_pct": 53.25000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 93473.38,
-      "price_high": 93776.865,
-      "price_mid": 93625.1225,
-      "distance_pct": 54.25,
+      "price_low": 92784.61000000002,
+      "price_high": 93086.84000000003,
+      "price_mid": 92935.72500000002,
+      "distance_pct": 53.75000000000003,
       "long_notional": 0.0,
-      "short_notional": 60705.0
+      "short_notional": 0.0
     },
     {
-      "price_low": 93776.865,
-      "price_high": 94080.35,
-      "price_mid": 93928.60750000001,
+      "price_low": 93086.84000000003,
+      "price_high": 93389.07,
+      "price_mid": 93237.95500000002,
+      "distance_pct": 54.25000000000003,
+      "long_notional": 0.0,
+      "short_notional": 0.0
+    },
+    {
+      "price_low": 93389.07,
+      "price_high": 93691.30000000002,
+      "price_mid": 93540.18500000001,
       "distance_pct": 54.75000000000002,
       "long_notional": 0.0,
-      "short_notional": 0.0
+      "short_notional": 60433.0
     },
     {
-      "price_low": 94080.35,
-      "price_high": 94383.835,
-      "price_mid": 94232.0925,
-      "distance_pct": 55.25,
+      "price_low": 93691.30000000002,
+      "price_high": 93993.53000000003,
+      "price_mid": 93842.41500000002,
+      "distance_pct": 55.250000000000036,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 94383.835,
-      "price_high": 94687.32,
-      "price_mid": 94535.57750000001,
-      "distance_pct": 55.75000000000002,
+      "price_low": 93993.53000000003,
+      "price_high": 94295.76000000001,
+      "price_mid": 94144.64500000002,
+      "distance_pct": 55.750000000000036,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 94687.32,
-      "price_high": 94990.80500000002,
-      "price_mid": 94839.06250000001,
+      "price_low": 94295.76000000001,
+      "price_high": 94597.99000000002,
+      "price_mid": 94446.87500000001,
       "distance_pct": 56.25000000000002,
       "long_notional": 0.0,
-      "short_notional": 773962.11152
+      "short_notional": 0.0
     },
     {
-      "price_low": 94990.80500000002,
-      "price_high": 95294.29000000001,
-      "price_mid": 95142.54750000002,
-      "distance_pct": 56.75000000000002,
+      "price_low": 94597.99000000002,
+      "price_high": 94900.22000000003,
+      "price_mid": 94749.10500000003,
+      "distance_pct": 56.75000000000004,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 95294.29000000001,
-      "price_high": 95597.77500000002,
-      "price_mid": 95446.03250000002,
-      "distance_pct": 57.25000000000002,
+      "price_low": 94900.22000000003,
+      "price_high": 95202.45000000001,
+      "price_mid": 95051.33500000002,
+      "distance_pct": 57.250000000000036,
       "long_notional": 0.0,
-      "short_notional": 0.0
+      "short_notional": 771014.68088
     },
     {
-      "price_low": 95597.77500000002,
-      "price_high": 95901.26000000001,
-      "price_mid": 95749.51750000002,
+      "price_low": 95202.45000000001,
+      "price_high": 95504.68000000002,
+      "price_mid": 95353.56500000002,
       "distance_pct": 57.75000000000002,
       "long_notional": 0.0,
-      "short_notional": 3219030.24268
+      "short_notional": 0.0
     },
     {
-      "price_low": 95901.26000000001,
-      "price_high": 96204.74500000001,
-      "price_mid": 96053.0025,
-      "distance_pct": 58.25,
+      "price_low": 95504.68000000002,
+      "price_high": 95806.91,
+      "price_mid": 95655.79500000001,
+      "distance_pct": 58.25000000000002,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 96204.74500000001,
-      "price_high": 96508.23000000001,
-      "price_mid": 96356.48750000002,
-      "distance_pct": 58.75000000000002,
+      "price_low": 95806.91,
+      "price_high": 96109.14000000001,
+      "price_mid": 95958.02500000001,
+      "distance_pct": 58.750000000000014,
       "long_notional": 0.0,
       "short_notional": 0.0
     },
     {
-      "price_low": 96508.23000000001,
-      "price_high": 96811.71500000001,
-      "price_mid": 96659.9725,
-      "distance_pct": 59.25,
+      "price_low": 96109.14000000001,
+      "price_high": 96411.37000000002,
+      "price_mid": 96260.25500000002,
+      "distance_pct": 59.250000000000036,
       "long_notional": 0.0,
-      "short_notional": 5592071.63512
+      "short_notional": 0.0
     },
     {
-      "price_low": 96811.71500000001,
-      "price_high": 97115.20000000001,
-      "price_mid": 96963.45750000002,
+      "price_low": 96411.37000000002,
+      "price_high": 96713.6,
+      "price_mid": 96562.48500000002,
       "distance_pct": 59.75000000000003,
       "long_notional": 0.0,
       "short_notional": 0.0
     }
   ],
   "summary_row": {
-    "timestamp": "2026-06-29T12:23:14+00:00",
+    "timestamp": "2026-06-29T12:33:14+00:00",
     "coin": "BTC",
-    "mark_px": 60697.0,
-    "oracle_px": 60718.0,
+    "mark_px": 60446.0,
+    "oracle_px": 60472.0,
     "funding_hourly": 1.25e-05,
-    "oi_btc": 34167.0015199999,
-    "oi_usd": 2073834491.2594342,
-    "cfi": 21.07,
+    "oi_btc": 34149.42336,
+    "oi_usd": 2064196044.41856,
+    "cfi": 20.39,
     "regime": "calm",
-    "asymmetry": 0.3408,
-    "long_pressure": 67041521.0126427,
-    "short_pressure": 136365438.43931326,
-    "liq_within_2pct_usd": 49634973.85623,
-    "liq_within_5pct_usd": 104567253.76107998,
-    "liq_within_10pct_usd": 285210371.65084,
+    "asymmetry": 0.2949,
+    "long_pressure": 68030495.43531838,
+    "short_pressure": 124945822.98388344,
+    "liq_within_2pct_usd": 24984847.852509998,
+    "liq_within_5pct_usd": 116273263.53864,
+    "liq_within_10pct_usd": 274067371.49195,
     "n_wallets": 2000,
-    "n_positions": 277,
-    "sampled_notional_usd": 965324257.80899,
-    "coverage_ratio": 0.4654779645519113,
-    "n_null_liqpx": 78,
-    "n_dust_filtered": 32,
+    "n_positions": 270,
+    "sampled_notional_usd": 946274988.81145,
+    "coverage_ratio": 0.45842302206232327,
+    "n_null_liqpx": 82,
+    "n_dust_filtered": 29,
     "n_far_filtered": 68
   }
 }
